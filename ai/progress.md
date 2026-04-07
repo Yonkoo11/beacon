@@ -1,6 +1,6 @@
 # Beacon - Progress
 
-## Status: Phase 1+2 COMPLETE. Phase 3 starting (dashboard + README).
+## Status: Phase 1+2+3 COMPLETE. Phase 4 next (polish + demo video + submit).
 
 ### Phase 1 Results (verified)
 - Server starts, probes 8 endpoints every 5 min
@@ -26,11 +26,24 @@
 - Stellar wallet funded: 10 USDC + 9990 XLM via DEX swap (Circle faucet blocked by reCAPTCHA)
 - xlm402 endpoints show real reliability variation (3-7/8 healthy across cycles)
 
-### What's Next (Phase 3)
-1. Dashboard UI (endpoint cards, probe feed, stats)
-2. README.md
-3. GitHub repo creation
-4. Then Phase 4: /design polish + demo video + submit
+### Phase 3 Results (verified)
+- Dashboard: endpoint cards, probe feed, stats grid, auto-refresh 10s
+- README.md: architecture, API docs, quick start, trust score formula
+- GitHub repo: https://github.com/Yonkoo11/beacon (public, pushed)
+
+### Phase 4 polish items identified during build
+- Status dots need brighter colors (gray dots hard to distinguish in dark theme)
+- Probe feed shows misleading low latencies for failures (should show "timeout" or "error")
+- No x402 badge showing which endpoints speak x402 protocol
+- Dashboard needs /design treatment for hackathon submission face
+- Demo video (2-3 min)
+- Submit on DoraHacks
+
+### What's Next (Phase 4)
+1. /design beacon -- visual polish
+2. Demo video
+3. Verify all submission requirements
+4. Submit on DoraHacks before April 13 18:00 UTC
 
 ### Build Order
 1. ~~Phase 1: Core action works~~ DONE
