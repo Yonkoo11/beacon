@@ -1,9 +1,10 @@
 import { getEndpoints, insertProbe, pruneOldProbes, countProbesToday } from "./db.js";
+import { isSafeUrl } from "./ssrf.js";
+import { checkBudget, checkCircuitBreaker, recordCycleResult } from "./guardrails.js";
 import type { ProbeResult } from "./types.js";
 
 const PROBE_INTERVAL_MS = 5 * 60 * 1000;
 const PROBE_TIMEOUT_MS = 10_000;
-const MAX_DAILY_PROBES = 500;
 
 let probeTimer: ReturnType<typeof setInterval> | null = null;
 let pruneTimer: ReturnType<typeof setInterval> | null = null;
@@ -56,10 +57,7 @@ async function probeEndpoint(url: string, method: string = "GET"): Promise<Probe
     const has_x402 = resp.status === 402 && x402.version !== null;
 
     return {
-      url,
-      timestamp,
-      success,
-      latency_ms,
+      url, timestamp, success, latency_ms,
       status_code: resp.status,
       error: null,
       has_x402,
@@ -69,8 +67,7 @@ async function probeEndpoint(url: string, method: string = "GET"): Promise<Probe
     };
   } catch (err: any) {
     return {
-      url,
-      timestamp,
+      url, timestamp,
       success: false,
       latency_ms: Date.now() - start,
       status_code: null,
@@ -84,18 +81,42 @@ async function probeEndpoint(url: string, method: string = "GET"): Promise<Probe
 }
 
 async function runProbeCycle(): Promise<void> {
-  const todayCount = countProbesToday();
-  const endpoints = getEndpoints();
-
-  if (todayCount + endpoints.length > MAX_DAILY_PROBES) {
-    console.log(`[probe] Daily budget reached (${todayCount}/${MAX_DAILY_PROBES}). Skipping cycle.`);
+  // Guardrail: circuit breaker
+  const cbCheck = checkCircuitBreaker();
+  if (!cbCheck.safe) {
+    console.log(`[probe] ${cbCheck.reason}. Skipping cycle.`);
     return;
   }
 
-  console.log(`[probe] Starting cycle: ${endpoints.length} endpoints`);
+  const endpoints = getEndpoints();
+  const todayCount = countProbesToday();
+
+  // Guardrail: daily budget
+  const budgetCheck = checkBudget(todayCount, endpoints.length);
+  if (!budgetCheck.safe) {
+    console.log(`[probe] ${budgetCheck.reason}. Skipping cycle.`);
+    return;
+  }
+
+  // SSRF: filter unsafe endpoints
+  const safeEndpoints = endpoints.filter(ep => {
+    const check = isSafeUrl(ep.url);
+    if (!check.safe) {
+      console.warn(`[probe] SSRF blocked: ${ep.url} (${check.reason})`);
+    }
+    return check.safe;
+  });
+
+  if (safeEndpoints.length === 0) {
+    console.log("[probe] No safe endpoints to probe.");
+    recordCycleResult(true);
+    return;
+  }
+
+  console.log(`[probe] Cycle: ${safeEndpoints.length} endpoints (${endpoints.length - safeEndpoints.length} SSRF-blocked)`);
 
   const results = await Promise.allSettled(
-    endpoints.map(ep => probeEndpoint(ep.url, ep.method))
+    safeEndpoints.map(ep => probeEndpoint(ep.url, ep.method))
   );
 
   let successCount = 0;
@@ -104,12 +125,14 @@ async function runProbeCycle(): Promise<void> {
       insertProbe(result.value);
       if (result.value.success) successCount++;
       const status = result.value.success ? "OK" : "FAIL";
-      const latency = result.value.latency_ms;
-      console.log(`  [${status}] ${result.value.url} (${latency}ms)`);
+      const x402Tag = result.value.has_x402 ? " [x402]" : "";
+      console.log(`  [${status}] ${result.value.url} (${result.value.latency_ms}ms)${x402Tag}`);
     }
   }
 
-  console.log(`[probe] Cycle complete: ${successCount}/${endpoints.length} healthy`);
+  const allFailed = successCount === 0;
+  recordCycleResult(allFailed);
+  console.log(`[probe] Cycle complete: ${successCount}/${safeEndpoints.length} healthy`);
 }
 
 export function startProbeLoop(): void {
