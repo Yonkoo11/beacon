@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beacon - x402 Reliability Monitor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0e1a;
+      color: #e0e4ef;
+      min-height: 100vh;
+    }
+
+    .header {
+      padding: 24px 32px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+    .logo-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34,197,94,0.4);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .header-meta {
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .header-meta a {
+      color: #818cf8;
+      text-decoration: none;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      padding: 24px 32px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .stat-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .stat-value.green { color: #22c55e; }
+    .stat-value.amber { color: #f59e0b; }
+    .stat-value.red { color: #ef4444; }
+
+    .content {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 24px;
+      padding: 0 32px 32px;
+    }
+    @media (max-width: 900px) {
+      .content { grid-template-columns: 1fr; }
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #6b7280;
+      margin-bottom: 16px;
+    }
+
+    .endpoints-list { display: flex; flex-direction: column; gap: 8px; }
+    .endpoint-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: 8px 1fr auto;
+      gap: 16px;
+      align-items: center;
+      transition: border-color 0.2s;
+    }
+    .endpoint-card:hover {
+      border-color: rgba(129,140,248,0.2);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .status-dot.up { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.3); }
+    .status-dot.down { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.3); }
+    .status-dot.unknown { background: #6b7280; }
+    .ep-info { min-width: 0; }
+    .ep-name {
+      font-weight: 500;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ep-url {
+      font-size: 11px;
+      color: #6b7280;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .ep-metrics {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .metric { text-align: right; }
+    .metric-value {
+      font-size: 18px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .metric-label {
+      font-size: 10px;
+      color: #6b7280;
+      text-transform: uppercase;
+    }
+
+    .probe-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .probe-entry {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .probe-entry:nth-child(odd) { background: rgba(255,255,255,0.015); }
+    .probe-icon { font-size: 10px; }
+    .probe-icon.ok { color: #22c55e; }
+    .probe-icon.fail { color: #ef4444; }
+    .probe-time { color: #6b7280; flex-shrink: 0; }
+    .probe-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .probe-latency {
+      color: #6b7280;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .footer {
+      padding: 16px 32px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font-size: 12px;
+      color: #4b5563;
+      display: flex;
+      justify-content: space-between;
+    }
+    .footer a { color: #818cf8; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      Beacon
+    </div>
+    <div class="header-meta">
+      x402 reliability monitor on Stellar &middot;
+      <a href="/api/docs">API Docs</a> &middot;
+      <a href="/api/health">Health</a>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Endpoints</div>
+      <div class="stat-value" id="stat-endpoints">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Probes Today</div>
+      <div class="stat-value" id="stat-probes">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Uptime</div>
+      <div class="stat-value green" id="stat-uptime">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Network</div>
+      <div class="stat-value" style="font-size:16px;color:#818cf8;">Stellar Testnet</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div>
+      <div class="section-title">Monitored Endpoints</div>
+      <div class="endpoints-list" id="endpoints-list"></div>
+    </div>
+    <div>
+      <div class="section-title">Recent Probes</div>
+      <div class="probe-feed" id="probe-feed"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Beacon v0.1.0 &middot; Stellar Hacks: Agents 2026</span>
+    <span>
+      <a href="/api/summary">JSON API</a> &middot;
+      Paid queries: $0.001 USDC via x402
+    </span>
+  </div>
+
+  <script>
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.textContent;
+    }
+
+    function colorForScore(score) {
+      if (score >= 80) return '#22c55e';
+      if (score >= 50) return '#f59e0b';
+      return '#ef4444';
+    }
+
+    function timeAgo(ts) {
+      const diff = Date.now() - ts;
+      if (diff < 60000) return Math.round(diff / 1000) + 's ago';
+      if (diff < 3600000) return Math.round(diff / 60000) + 'm ago';
+      return Math.round(diff / 3600000) + 'h ago';
+    }
+
+    function formatTime(ts) {
+      return new Date(ts).toLocaleTimeString('en-US', { hour12: false });
+    }
+
+    function shortName(url) {
+      try {
+        const u = new URL(url);
+        const path = u.pathname.replace(/^\//, '');
+        return u.hostname.replace('www.', '') + (path ? '/' + path.split('?')[0] : '');
+      } catch { return url; }
+    }
+
+    function createEndpointCard(ep) {
+      const card = document.createElement('div');
+      card.className = 'endpoint-card';
+
+      const dot = document.createElement('div');
+      dot.className = 'status-dot ' + ep.status;
+
+      const info = document.createElement('div');
+      info.className = 'ep-info';
+      const name = document.createElement('div');
+      name.className = 'ep-name';
+      name.textContent = ep.name;
+      const url = document.createElement('div');
+      url.className = 'ep-url';
+      url.textContent = shortName(ep.url);
+      info.appendChild(name);
+      info.appendChild(url);
+
+      const metrics = document.createElement('div');
+      metrics.className = 'ep-metrics';
+
+      const trustMetric = document.createElement('div');
+      trustMetric.className = 'metric';
+      const trustVal = document.createElement('div');
+      trustVal.className = 'metric-value';
+      trustVal.style.color = colorForScore(ep.trust_score);
+      trustVal.textContent = ep.trust_score;
+      const trustLabel = document.createElement('div');
+      trustLabel.className = 'metric-label';
+      trustLabel.textContent = 'Trust';
+      trustMetric.appendChild(trustVal);
+      trustMetric.appendChild(trustLabel);
+
+      const uptimeMetric = document.createElement('div');
+      uptimeMetric.className = 'metric';
+      const uptimeVal = document.createElement('div');
+      uptimeVal.className = 'metric-value';
+      uptimeVal.textContent = ep.uptime_score + '%';
+      const uptimeLabel = document.createElement('div');
+      uptimeLabel.className = 'metric-label';
+      uptimeLabel.textContent = 'Uptime';
+      uptimeMetric.appendChild(uptimeVal);
+      uptimeMetric.appendChild(uptimeLabel);
+
+      const lastMetric = document.createElement('div');
+      lastMetric.className = 'metric';
+      const lastVal = document.createElement('div');
+      lastVal.className = 'metric-value';
+      lastVal.style.fontSize = '13px';
+      lastVal.style.color = '#6b7280';
+      lastVal.textContent = ep.last_probed ? timeAgo(ep.last_probed) : 'never';
+      const lastLabel = document.createElement('div');
+      lastLabel.className = 'metric-label';
+      lastLabel.textContent = 'Last';
+      lastMetric.appendChild(lastVal);
+      lastMetric.appendChild(lastLabel);
+
+      metrics.appendChild(trustMetric);
+      metrics.appendChild(uptimeMetric);
+      metrics.appendChild(lastMetric);
+
+      card.appendChild(dot);
+      card.appendChild(info);
+      card.appendChild(metrics);
+      return card;
+    }
+
+    function createProbeEntry(p) {
+      const entry = document.createElement('div');
+      entry.className = 'probe-entry';
+
+      const icon = document.createElement('span');
+      icon.className = 'probe-icon ' + (p.success ? 'ok' : 'fail');
+      icon.textContent = p.success ? '\u2713' : '\u2717';
+
+      const time = document.createElement('span');
+      time.className = 'probe-time';
+      time.textContent = formatTime(p.timestamp);
+
+      const name = document.createElement('span');
+      name.className = 'probe-name';
+      name.textContent = shortName(p.url);
+
+      const latency = document.createElement('span');
+      latency.className = 'probe-latency';
+      latency.textContent = p.latency_ms + 'ms';
+
+      entry.appendChild(icon);
+      entry.appendChild(time);
+      entry.appendChild(name);
+      entry.appendChild(latency);
+      return entry;
+    }
+
+    async function refresh() {
+      try {
+        const resp = await fetch('/api/summary');
+        const data = await resp.json();
+
+        document.getElementById('stat-endpoints').textContent = data.stats.endpoints_tracked;
+        document.getElementById('stat-probes').textContent = data.stats.probes_today;
+
+        const uptimeEl = document.getElementById('stat-uptime');
+        uptimeEl.textContent = data.stats.avg_uptime + '%';
+        uptimeEl.className = 'stat-value ' + (data.stats.avg_uptime >= 80 ? 'green' : data.stats.avg_uptime >= 50 ? 'amber' : 'red');
+
+        const list = document.getElementById('endpoints-list');
+        list.replaceChildren();
+        data.endpoints
+          .sort((a, b) => b.trust_score - a.trust_score)
+          .forEach(ep => list.appendChild(createEndpointCard(ep)));
+
+        const feed = document.getElementById('probe-feed');
+        feed.replaceChildren();
+        data.recent_probes.forEach(p => feed.appendChild(createProbeEntry(p)));
+      } catch (err) {
+        console.error('Refresh failed:', err);
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 10000);
+  </script>
+</body>
+</html>

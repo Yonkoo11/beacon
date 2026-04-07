@@ -1,6 +1,6 @@
 # Beacon - Progress
 
-## Status: Phase 1 COMPLETE. Phase 2 starting.
+## Status: Phase 1+2 COMPLETE. Phase 3 starting (dashboard + README).
 
 ### Phase 1 Results (verified)
 - Server starts, probes 8 endpoints every 5 min
@@ -18,17 +18,19 @@
 - @x402/express v2.6.0 + @x402/core v2.6.0 + @x402/stellar v2.6.0
 - Facilitator at www.x402.org works; x402.org (no www) times out
 
-### What's NOT done yet (Phase 1 gate partial)
-- Haven't tested a PAID query with actual USDC payment (only verified 402 response)
-- No client-side test script to make a real payment
-- No dashboard UI yet
+### Phase 2 Results (verified)
+- SSRF protection: blocks internal IPs, localhost, non-HTTPS, .local/.internal, non-standard ports
+- Guardrails: daily budget (500), circuit breaker (3 consecutive all-fail)
+- 32 tests passing (SSRF: 13, probe parsing: 7, score math: 12)
+- x402 payment tested end-to-end: client pays 0.001 USDC -> gets trust score JSON
+- Stellar wallet funded: 10 USDC + 9990 XLM via DEX swap (Circle faucet blocked by reCAPTCHA)
+- xlm402 endpoints show real reliability variation (3-7/8 healthy across cycles)
 
-### What's Next (Phase 2)
-1. SSRF protection module
-2. Guardrails (daily budget, circuit breaker)
-3. x402 header parsing in probe results
-4. Probe pruning
-5. Dashboard UI (Phase 3)
+### What's Next (Phase 3)
+1. Dashboard UI (endpoint cards, probe feed, stats)
+2. README.md
+3. GitHub repo creation
+4. Then Phase 4: /design polish + demo video + submit
 
 ### Build Order
 1. ~~Phase 1: Core action works~~ DONE
