@@ -1,6 +1,6 @@
 # Beacon - Progress
 
-## Status: Phase 1+2+3 COMPLETE. Phase 4 next (polish + demo video + submit).
+## Status: Phase 4.1 COMPLETE (dashboard polish). Demo video + submit next.
 
 ### Phase 1 Results (verified)
 - Server starts, probes 8 endpoints every 5 min
@@ -31,11 +31,15 @@
 - README.md: architecture, API docs, quick start, trust score formula
 - GitHub repo: https://github.com/Yonkoo11/beacon (public, pushed)
 
-### Phase 4 polish items identified during build
-- Status dots need brighter colors (gray dots hard to distinguish in dark theme)
-- Probe feed shows misleading low latencies for failures (should show "timeout" or "error")
-- No x402 badge showing which endpoints speak x402 protocol
-- Dashboard needs /design treatment for hackathon submission face
+### Phase 4.1 Results (dashboard polish)
+- Status dots: bright green/red with glow, clearly visible in dark theme
+- Probe feed: failures show "timeout", "500 err", "refused", "dns fail" instead of misleading ms
+- x402 badges: show on endpoints with valid x402 headers (green = active, purple = detected)
+- Visual: gradient background, card edge highlights, scrollable probe panel, live indicator
+- Summary API now exposes: latency_score, avg_latency_ms, p95_latency_ms, x402 metadata, error info
+- 32 tests still passing
+
+### Phase 4 remaining
 - Demo video (2-3 min)
 - Submit on DoraHacks
 
