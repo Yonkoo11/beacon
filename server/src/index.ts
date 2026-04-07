@@ -77,10 +77,17 @@ app.get("/api/summary", (_req, res) => {
       name: s.name,
       trust_score: s.trust_score,
       uptime_score: s.uptime_score,
+      latency_score: s.latency_score,
+      avg_latency_ms: s.avg_latency_ms,
+      p95_latency_ms: s.p95_latency_ms,
+      total_probes_24h: s.total_probes_24h,
       last_probed: s.last_probed,
       status: s.total_probes_24h === 0
         ? "unknown" as const
         : s.uptime_score >= 50 ? "up" as const : "down" as const,
+      x402_valid_rate: s.x402_valid_rate,
+      x402_network: s.x402_network,
+      x402_price: s.x402_price,
     })),
     recent_probes: recentProbes,
     stats: {

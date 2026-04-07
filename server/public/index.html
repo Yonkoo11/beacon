@@ -3,19 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Beacon - x402 Reliability Monitor</title>
+  <title>Beacon - x402 Trust Monitor</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0a0e1a;
+      background: #080c16;
       color: #e0e4ef;
       min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(34,197,94,0.05) 0%, transparent 50%);
     }
 
     .header {
-      padding: 24px 32px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding: 24px 32px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -24,102 +26,141 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      font-size: 20px;
-      font-weight: 600;
-      letter-spacing: -0.3px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
     }
     .logo-dot {
-      width: 10px;
-      height: 10px;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
       background: #22c55e;
-      box-shadow: 0 0 8px rgba(34,197,94,0.4);
+      box-shadow: 0 0 12px rgba(34,197,94,0.5), 0 0 24px rgba(34,197,94,0.2);
       animation: pulse 2s ease-in-out infinite;
     }
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      0%, 100% { opacity: 1; box-shadow: 0 0 12px rgba(34,197,94,0.5), 0 0 24px rgba(34,197,94,0.2); }
+      50% { opacity: 0.6; box-shadow: 0 0 6px rgba(34,197,94,0.3); }
     }
     .header-meta {
       font-size: 13px;
       color: #6b7280;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
     .header-meta a {
       color: #818cf8;
       text-decoration: none;
+      transition: color 0.15s;
     }
+    .header-meta a:hover { color: #a5b4fc; }
+    .header-sep { color: #374151; }
+
+    .subtitle {
+      padding: 0 32px 20px;
+      font-size: 14px;
+      color: #6b7280;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .subtitle strong { color: #818cf8; font-weight: 500; }
 
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
-      padding: 24px 32px;
+      gap: 12px;
+      padding: 20px 32px;
     }
     .stat-card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.05);
       border-radius: 12px;
-      padding: 20px;
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(129,140,248,0.12), transparent);
     }
     .stat-label {
-      font-size: 12px;
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.8px;
       color: #6b7280;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .stat-value {
       font-size: 28px;
       font-weight: 700;
       letter-spacing: -0.5px;
+      font-variant-numeric: tabular-nums;
     }
-    .stat-value.green { color: #22c55e; }
-    .stat-value.amber { color: #f59e0b; }
-    .stat-value.red { color: #ef4444; }
+    .stat-value.green { color: #22c55e; text-shadow: 0 0 20px rgba(34,197,94,0.15); }
+    .stat-value.amber { color: #f59e0b; text-shadow: 0 0 20px rgba(245,158,11,0.15); }
+    .stat-value.red { color: #ef4444; text-shadow: 0 0 20px rgba(239,68,68,0.15); }
 
     .content {
       display: grid;
-      grid-template-columns: 1fr 360px;
+      grid-template-columns: 1fr 380px;
       gap: 24px;
-      padding: 0 32px 32px;
+      padding: 8px 32px 32px;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 960px) {
       .content { grid-template-columns: 1fr; }
     }
 
     .section-title {
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.8px;
       color: #6b7280;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
-    .endpoints-list { display: flex; flex-direction: column; gap: 8px; }
+    .endpoints-list { display: flex; flex-direction: column; gap: 6px; }
     .endpoint-card {
       background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.05);
       border-radius: 10px;
-      padding: 16px 20px;
+      padding: 14px 18px;
       display: grid;
-      grid-template-columns: 8px 1fr auto;
-      gap: 16px;
+      grid-template-columns: 10px 1fr auto;
+      gap: 14px;
       align-items: center;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, background 0.2s;
     }
     .endpoint-card:hover {
-      border-color: rgba(129,140,248,0.2);
+      border-color: rgba(129,140,248,0.15);
+      background: rgba(255,255,255,0.03);
     }
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
     }
-    .status-dot.up { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,0.3); }
-    .status-dot.down { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.3); }
-    .status-dot.unknown { background: #6b7280; }
+    .status-dot.up {
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34,197,94,0.5), 0 0 16px rgba(34,197,94,0.2);
+    }
+    .status-dot.down {
+      background: #ef4444;
+      box-shadow: 0 0 8px rgba(239,68,68,0.5), 0 0 16px rgba(239,68,68,0.2);
+    }
+    .status-dot.unknown {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245,158,11,0.4);
+    }
     .ep-info { min-width: 0; }
+    .ep-name-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
     .ep-name {
       font-weight: 500;
       font-size: 14px;
@@ -127,9 +168,28 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .badge-x402 {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: rgba(129,140,248,0.12);
+      color: #a5b4fc;
+      border: 1px solid rgba(129,140,248,0.15);
+      flex-shrink: 0;
+    }
+    .badge-x402.active {
+      background: rgba(34,197,94,0.1);
+      color: #4ade80;
+      border-color: rgba(34,197,94,0.15);
+    }
     .ep-url {
       font-size: 11px;
-      color: #6b7280;
+      color: #4b5563;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -137,7 +197,7 @@
     }
     .ep-metrics {
       display: flex;
-      gap: 20px;
+      gap: 18px;
       align-items: center;
       flex-shrink: 0;
     }
@@ -151,49 +211,88 @@
       font-size: 10px;
       color: #6b7280;
       text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
 
+    .probe-panel {
+      background: rgba(255,255,255,0.015);
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 16px;
+    }
     .probe-feed {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      max-height: 500px;
+      gap: 2px;
+      max-height: 520px;
       overflow-y: auto;
     }
+    .probe-feed::-webkit-scrollbar { width: 4px; }
+    .probe-feed::-webkit-scrollbar-track { background: transparent; }
+    .probe-feed::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
     .probe-entry {
-      display: flex;
-      align-items: center;
+      display: grid;
+      grid-template-columns: 14px 52px 1fr auto;
       gap: 8px;
-      padding: 6px 10px;
+      align-items: center;
+      padding: 5px 8px;
       border-radius: 6px;
       font-size: 12px;
-      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
     }
     .probe-entry:nth-child(odd) { background: rgba(255,255,255,0.015); }
-    .probe-icon { font-size: 10px; }
+    .probe-icon { font-size: 11px; font-weight: bold; }
     .probe-icon.ok { color: #22c55e; }
     .probe-icon.fail { color: #ef4444; }
-    .probe-time { color: #6b7280; flex-shrink: 0; }
+    .probe-icon.timeout { color: #f59e0b; }
+    .probe-time { color: #4b5563; flex-shrink: 0; font-size: 11px; }
     .probe-name {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      color: #9ca3af;
     }
-    .probe-latency {
-      color: #6b7280;
+    .probe-result {
       margin-left: auto;
       flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 500;
     }
+    .probe-result.ok { color: #6b7280; }
+    .probe-result.fail { color: #ef4444; }
+    .probe-result.timeout { color: #f59e0b; }
 
     .footer {
       padding: 16px 32px;
-      border-top: 1px solid rgba(255,255,255,0.06);
+      border-top: 1px solid rgba(255,255,255,0.04);
       font-size: 12px;
-      color: #4b5563;
+      color: #374151;
       display: flex;
       justify-content: space-between;
+      align-items: center;
     }
-    .footer a { color: #818cf8; text-decoration: none; }
+    .footer a { color: #6366f1; text-decoration: none; }
+    .footer a:hover { color: #818cf8; }
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: #4b5563;
+    }
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pulse 2s ease-in-out infinite;
+    }
   </style>
 </head>
 <body>
@@ -203,10 +302,16 @@
       Beacon
     </div>
     <div class="header-meta">
-      x402 reliability monitor on Stellar &middot;
-      <a href="/api/docs">API Docs</a> &middot;
+      <a href="/api/docs">API</a>
+      <span class="header-sep">|</span>
       <a href="/api/health">Health</a>
+      <span class="header-sep">|</span>
+      <a href="/api/summary">JSON</a>
     </div>
+  </div>
+
+  <div class="subtitle">
+    Trust scores for the <strong>x402 agent economy</strong> on Stellar. Probing every 5 minutes.
   </div>
 
   <div class="stats-grid">
@@ -215,7 +320,7 @@
       <div class="stat-value" id="stat-endpoints">-</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Probes Today</div>
+      <div class="stat-label">Probes (24h)</div>
       <div class="stat-value" id="stat-probes">-</div>
     </div>
     <div class="stat-card">
@@ -224,7 +329,7 @@
     </div>
     <div class="stat-card">
       <div class="stat-label">Network</div>
-      <div class="stat-value" style="font-size:16px;color:#818cf8;">Stellar Testnet</div>
+      <div class="stat-value" style="font-size:15px;color:#818cf8;">Stellar Testnet</div>
     </div>
   </div>
 
@@ -234,26 +339,25 @@
       <div class="endpoints-list" id="endpoints-list"></div>
     </div>
     <div>
-      <div class="section-title">Recent Probes</div>
-      <div class="probe-feed" id="probe-feed"></div>
+      <div class="probe-panel">
+        <div class="section-title" style="margin-bottom:10px;">Live Probe Feed</div>
+        <div class="probe-feed" id="probe-feed"></div>
+      </div>
     </div>
   </div>
 
   <div class="footer">
-    <span>Beacon v0.1.0 &middot; Stellar Hacks: Agents 2026</span>
-    <span>
-      <a href="/api/summary">JSON API</a> &middot;
-      Paid queries: $0.001 USDC via x402
-    </span>
+    <span>Beacon v0.1.0 &middot; Stellar Hacks 2026</span>
+    <div class="footer-right">
+      <div class="live-indicator">
+        <div class="live-dot"></div>
+        Auto-refresh 10s
+      </div>
+      <span>Paid queries: $0.001 USDC via <a href="/api/docs">x402</a></span>
+    </div>
   </div>
 
   <script>
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.textContent;
-    }
-
     function colorForScore(score) {
       if (score >= 80) return '#22c55e';
       if (score >= 50) return '#f59e0b';
@@ -268,7 +372,7 @@
     }
 
     function formatTime(ts) {
-      return new Date(ts).toLocaleTimeString('en-US', { hour12: false });
+      return new Date(ts).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
     function shortName(url) {
@@ -288,18 +392,37 @@
 
       const info = document.createElement('div');
       info.className = 'ep-info';
+
+      const nameRow = document.createElement('div');
+      nameRow.className = 'ep-name-row';
       const name = document.createElement('div');
       name.className = 'ep-name';
       name.textContent = ep.name;
+      nameRow.appendChild(name);
+
+      // x402 badge
+      if (ep.x402_valid_rate > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'badge-x402 active';
+        badge.textContent = 'x402';
+        nameRow.appendChild(badge);
+      } else if (ep.x402_network) {
+        const badge = document.createElement('span');
+        badge.className = 'badge-x402';
+        badge.textContent = 'x402';
+        nameRow.appendChild(badge);
+      }
+
       const url = document.createElement('div');
       url.className = 'ep-url';
       url.textContent = shortName(ep.url);
-      info.appendChild(name);
+      info.appendChild(nameRow);
       info.appendChild(url);
 
       const metrics = document.createElement('div');
       metrics.className = 'ep-metrics';
 
+      // Trust score
       const trustMetric = document.createElement('div');
       trustMetric.className = 'metric';
       const trustVal = document.createElement('div');
@@ -312,10 +435,12 @@
       trustMetric.appendChild(trustVal);
       trustMetric.appendChild(trustLabel);
 
+      // Uptime
       const uptimeMetric = document.createElement('div');
       uptimeMetric.className = 'metric';
       const uptimeVal = document.createElement('div');
       uptimeVal.className = 'metric-value';
+      uptimeVal.style.color = colorForScore(ep.uptime_score);
       uptimeVal.textContent = ep.uptime_score + '%';
       const uptimeLabel = document.createElement('div');
       uptimeLabel.className = 'metric-label';
@@ -323,11 +448,30 @@
       uptimeMetric.appendChild(uptimeVal);
       uptimeMetric.appendChild(uptimeLabel);
 
+      // Latency (p95)
+      const latMetric = document.createElement('div');
+      latMetric.className = 'metric';
+      const latVal = document.createElement('div');
+      latVal.className = 'metric-value';
+      latVal.style.fontSize = '14px';
+      latVal.style.color = '#9ca3af';
+      if (ep.total_probes_24h > 0 && ep.avg_latency_ms > 0) {
+        latVal.textContent = ep.avg_latency_ms + 'ms';
+      } else {
+        latVal.textContent = '-';
+      }
+      const latLabel = document.createElement('div');
+      latLabel.className = 'metric-label';
+      latLabel.textContent = 'Avg';
+      latMetric.appendChild(latVal);
+      latMetric.appendChild(latLabel);
+
+      // Last probed
       const lastMetric = document.createElement('div');
       lastMetric.className = 'metric';
       const lastVal = document.createElement('div');
       lastVal.className = 'metric-value';
-      lastVal.style.fontSize = '13px';
+      lastVal.style.fontSize = '12px';
       lastVal.style.color = '#6b7280';
       lastVal.textContent = ep.last_probed ? timeAgo(ep.last_probed) : 'never';
       const lastLabel = document.createElement('div');
@@ -338,6 +482,7 @@
 
       metrics.appendChild(trustMetric);
       metrics.appendChild(uptimeMetric);
+      metrics.appendChild(latMetric);
       metrics.appendChild(lastMetric);
 
       card.appendChild(dot);
@@ -346,12 +491,36 @@
       return card;
     }
 
+    function probeResultText(p) {
+      if (p.success) {
+        return { text: p.latency_ms + 'ms', cls: 'ok' };
+      }
+      if (p.error && p.error.includes('timeout')) {
+        return { text: 'timeout', cls: 'timeout' };
+      }
+      if (p.error && p.error.includes('ECONNREFUSED')) {
+        return { text: 'refused', cls: 'fail' };
+      }
+      if (p.error && p.error.includes('ENOTFOUND')) {
+        return { text: 'dns fail', cls: 'fail' };
+      }
+      if (p.status_code && p.status_code >= 500) {
+        return { text: p.status_code + ' err', cls: 'fail' };
+      }
+      if (p.error) {
+        return { text: 'error', cls: 'fail' };
+      }
+      return { text: p.latency_ms + 'ms', cls: 'ok' };
+    }
+
     function createProbeEntry(p) {
       const entry = document.createElement('div');
       entry.className = 'probe-entry';
 
+      const result = probeResultText(p);
+
       const icon = document.createElement('span');
-      icon.className = 'probe-icon ' + (p.success ? 'ok' : 'fail');
+      icon.className = 'probe-icon ' + (p.success ? 'ok' : result.cls === 'timeout' ? 'timeout' : 'fail');
       icon.textContent = p.success ? '\u2713' : '\u2717';
 
       const time = document.createElement('span');
@@ -363,8 +532,8 @@
       name.textContent = shortName(p.url);
 
       const latency = document.createElement('span');
-      latency.className = 'probe-latency';
-      latency.textContent = p.latency_ms + 'ms';
+      latency.className = 'probe-result ' + result.cls;
+      latency.textContent = result.text;
 
       entry.appendChild(icon);
       entry.appendChild(time);

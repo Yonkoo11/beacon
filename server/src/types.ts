@@ -41,14 +41,23 @@ export interface SummaryResponse {
     name: string;
     trust_score: number;
     uptime_score: number;
+    latency_score: number;
+    avg_latency_ms: number;
+    p95_latency_ms: number;
+    total_probes_24h: number;
     last_probed: number | null;
     status: "up" | "down" | "unknown";
+    x402_valid_rate: number;
+    x402_network: string | null;
+    x402_price: string | null;
   }>;
   recent_probes: Array<{
     url: string;
     timestamp: number;
     success: boolean;
     latency_ms: number;
+    status_code: number | null;
+    error: string | null;
   }>;
   stats: {
     endpoints_tracked: number;

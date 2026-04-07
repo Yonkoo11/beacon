@@ -50,7 +50,7 @@ const stmtGetProbes24h = db.prepare(
 );
 
 const stmtGetRecentProbes = db.prepare(
-  `SELECT url, timestamp, success, latency_ms FROM probes ORDER BY timestamp DESC LIMIT ?`
+  `SELECT url, timestamp, success, latency_ms, status_code, error FROM probes ORDER BY timestamp DESC LIMIT ?`
 );
 
 const stmtGetEndpoints = db.prepare(`SELECT * FROM endpoints`);
@@ -94,7 +94,7 @@ export function getProbes24h(url: string): ProbeResult[] {
   }));
 }
 
-export function getRecentProbes(limit: number = 20): Array<{ url: string; timestamp: number; success: boolean; latency_ms: number }> {
+export function getRecentProbes(limit: number = 20): Array<{ url: string; timestamp: number; success: boolean; latency_ms: number; status_code: number | null; error: string | null }> {
   const rows = stmtGetRecentProbes.all(limit) as any[];
   return rows.map(r => ({ ...r, success: !!r.success }));
 }
