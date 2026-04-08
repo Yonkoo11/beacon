@@ -1,0 +1,15 @@
+services:
+  - type: web
+    runtime: node
+    name: beacon
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npx tsx src/index.ts
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: STELLAR_PUBLIC_KEY
+        sync: false
+      - key: STELLAR_SECRET_KEY
+        sync: false
