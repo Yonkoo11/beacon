@@ -1,5 +1,7 @@
 # Beacon
 
+**Live:** [beacon-gi0z.onrender.com](https://beacon-gi0z.onrender.com)
+
 Trust scores for the x402 agent economy on Stellar.
 
 Beacon continuously probes x402 endpoints with real HTTP requests, computes reliability scores, and serves them behind an x402 paywall. Agents query Beacon before spending money to know which services are actually working.
