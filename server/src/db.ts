@@ -161,7 +161,7 @@ export function seedEndpoints(): void {
     {
       url: "https://x402.org/facilitator/supported",
       name: "Coinbase Facilitator",
-      description: "Coinbase x402 facilitator (known to timeout)",
+      description: "Coinbase x402 facilitator for Stellar",
       method: "GET",
     },
     {

@@ -5,3 +5,7 @@ dist/
 *.db-wal
 *.db-shm
 .DS_Store
+ai/
+.ralph/
+.claudeignore
+CLAUDE.md

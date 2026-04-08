@@ -55,6 +55,11 @@ beacon/
       ssrf.ts         URL validation (blocks internal IPs)
       guardrails.ts   Daily budget + circuit breaker
       types.ts        TypeScript types
+      __tests__/      32 tests (SSRF, probe parsing, score math)
+    scripts/
+      setup-trustline.ts   USDC trustline setup
+      fund-usdc.ts         DEX swap for testnet USDC
+      test-client.ts       x402 payment test client
     public/
       index.html      Live dashboard
 ```
@@ -78,8 +83,8 @@ curl "https://friendbot.stellar.org?addr=YOUR_PUBLIC_KEY"
 
 # Add USDC trustline + get testnet USDC
 npm install
-npx tsx src/setup-trustline.ts
-npx tsx src/fund-usdc.ts
+npx tsx scripts/setup-trustline.ts
+npx tsx scripts/fund-usdc.ts
 
 # Start
 npm run dev
@@ -106,13 +111,12 @@ Dashboard at http://localhost:3001. Probes start immediately.
 
 ## What Beacon Found
 
-During development on Stellar testnet, Beacon detected:
-- **Coinbase x402 facilitator** (x402.org): consistently times out (10s+)
-- **xlm402 testnet endpoints**: intermittent failures (3-87% uptime depending on endpoint)
-- **OpenZeppelin facilitator**: stable but returns 401 without auth
-- **MPP demo service**: generally healthy
+During development on Stellar testnet, Beacon detected real reliability variation:
+- **xlm402 testnet endpoints**: intermittent failures (3-87% uptime depending on endpoint and time of day)
+- **x402 facilitators**: varying response times and availability across providers
+- **MPP demo service**: generally healthy with stable latency
 
-This is the exact reliability data that agents need before making payment decisions.
+This is the exact reliability data that agents need before making payment decisions. Without Beacon, agents pay blindly and discover failures after money is spent.
 
 ## Tests
 
