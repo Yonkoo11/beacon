@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { paymentMiddlewareFromConfig } from "@x402/express";
 import { HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactStellarScheme } from "@x402/stellar/exact/server";
-import { seedEndpoints, getRecentProbes, getEndpoints, countProbesToday } from "./db.js";
+import { seedEndpoints, getRecentProbes, getEndpoints, countProbesToday, getProbeHistory } from "./db.js";
 import { computeScore, computeAllScores } from "./score.js";
 import { startProbeLoop } from "./probe.js";
 import type { SummaryResponse } from "./types.js";
@@ -88,6 +88,7 @@ app.get("/api/summary", (_req, res) => {
       x402_valid_rate: s.x402_valid_rate,
       x402_network: s.x402_network,
       x402_price: s.x402_price,
+      probe_history: getProbeHistory(s.url, 30),
     })),
     recent_probes: recentProbes,
     stats: {

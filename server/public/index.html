@@ -4,20 +4,89 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Beacon - x402 Trust Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #080c16;
-      color: #e0e4ef;
-      min-height: 100vh;
-      background-image:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.08) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 40% at 80% 100%, rgba(34,197,94,0.05) 0%, transparent 50%);
+
+    :root {
+      --bg-base: #07090f;
+      --bg-surface: #0d1017;
+      --bg-elevated: #131720;
+      --border: rgba(255,255,255,0.06);
+      --border-hover: rgba(99,102,241,0.2);
+      --text-primary: #e8eaf0;
+      --text-secondary: #8b8fa3;
+      --text-muted: #4b5060;
+      --accent: #6366f1;
+      --accent-glow: rgba(99,102,241,0.15);
+      --green: #22c55e;
+      --green-deep: rgba(34,197,94,0.1);
+      --green-glow: rgba(34,197,94,0.15);
+      --amber: #f59e0b;
+      --amber-deep: rgba(245,158,11,0.1);
+      --red: #ef4444;
+      --red-deep: rgba(239,68,68,0.1);
+      --red-glow: rgba(239,68,68,0.15);
     }
 
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background layers for depth */
+    .bg-layers {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .bg-layers::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120%;
+      height: 60%;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.06) 0%, transparent 70%);
+    }
+    .bg-layers::after {
+      content: '';
+      position: absolute;
+      bottom: -10%;
+      right: -10%;
+      width: 60%;
+      height: 50%;
+      background: radial-gradient(ellipse, rgba(34,197,94,0.03) 0%, transparent 60%);
+    }
+    /* Noise texture */
+    .noise {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 256px 256px;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* Header */
     .header {
-      padding: 24px 32px 16px;
+      padding: 28px 0 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -26,543 +95,619 @@
       display: flex;
       align-items: center;
       gap: 12px;
+    }
+    .logo-beacon {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 16px var(--accent-glow), 0 0 40px rgba(99,102,241,0.08);
+      animation: beacon-pulse 3s ease-in-out infinite;
+    }
+    @keyframes beacon-pulse {
+      0%, 100% { box-shadow: 0 0 16px var(--accent-glow), 0 0 40px rgba(99,102,241,0.08); }
+      50% { box-shadow: 0 0 24px rgba(99,102,241,0.25), 0 0 60px rgba(99,102,241,0.12); }
+    }
+    .logo-text {
       font-size: 22px;
       font-weight: 700;
       letter-spacing: -0.5px;
     }
-    .logo-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 12px rgba(34,197,94,0.5), 0 0 24px rgba(34,197,94,0.2);
-      animation: pulse 2s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; box-shadow: 0 0 12px rgba(34,197,94,0.5), 0 0 24px rgba(34,197,94,0.2); }
-      50% { opacity: 0.6; box-shadow: 0 0 6px rgba(34,197,94,0.3); }
-    }
-    .header-meta {
-      font-size: 13px;
-      color: #6b7280;
+    .nav-links {
       display: flex;
-      align-items: center;
-      gap: 12px;
+      gap: 20px;
+      font-size: 13px;
     }
-    .header-meta a {
-      color: #818cf8;
+    .nav-links a {
+      color: var(--text-muted);
       text-decoration: none;
       transition: color 0.15s;
     }
-    .header-meta a:hover { color: #a5b4fc; }
-    .header-sep { color: #374151; }
+    .nav-links a:hover { color: var(--accent); }
 
-    .subtitle {
-      padding: 0 32px 20px;
-      font-size: 14px;
-      color: #6b7280;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+    /* Hero trust score */
+    .hero {
+      padding: 48px 0 40px;
+      display: flex;
+      align-items: flex-end;
+      gap: 48px;
     }
-    .subtitle strong { color: #818cf8; font-weight: 500; }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      padding: 20px 32px;
-    }
-    .stat-card {
-      background: rgba(255,255,255,0.025);
-      border: 1px solid rgba(255,255,255,0.05);
-      border-radius: 12px;
-      padding: 18px 20px;
+    .hero-score {
       position: relative;
-      overflow: hidden;
     }
-    .stat-card::before {
+    .hero-score::before {
       content: '';
       position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(129,140,248,0.12), transparent);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, var(--hero-glow, var(--accent-glow)) 0%, transparent 70%);
+      pointer-events: none;
     }
-    .stat-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: #6b7280;
-      margin-bottom: 6px;
-    }
-    .stat-value {
-      font-size: 28px;
+    .score-number {
+      font-size: 80px;
       font-weight: 700;
-      letter-spacing: -0.5px;
+      letter-spacing: -3px;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      position: relative;
+    }
+    .score-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-top: 8px;
+    }
+    .hero-meta {
+      padding-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .hero-desc {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      max-width: 480px;
+    }
+    .hero-desc strong { color: var(--accent); font-weight: 500; }
+    .hero-stats {
+      display: flex;
+      gap: 24px;
+      margin-top: 4px;
+    }
+    .hero-stat {
+      font-size: 14px;
+      color: var(--text-muted);
       font-variant-numeric: tabular-nums;
     }
-    .stat-value.green { color: #22c55e; text-shadow: 0 0 20px rgba(34,197,94,0.15); }
-    .stat-value.amber { color: #f59e0b; text-shadow: 0 0 20px rgba(245,158,11,0.15); }
-    .stat-value.red { color: #ef4444; text-shadow: 0 0 20px rgba(239,68,68,0.15); }
+    .hero-stat b {
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
 
-    .content {
+    /* Main grid */
+    .main-grid {
       display: grid;
-      grid-template-columns: 1fr 380px;
+      grid-template-columns: 1fr 340px;
       gap: 24px;
-      padding: 8px 32px 32px;
+      padding-bottom: 40px;
     }
     @media (max-width: 960px) {
-      .content { grid-template-columns: 1fr; }
+      .main-grid { grid-template-columns: 1fr; }
+      .hero { flex-direction: column; align-items: flex-start; gap: 24px; }
     }
 
+    /* Section headers */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
     .section-title {
       font-size: 12px;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: #6b7280;
-      margin-bottom: 12px;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+    .section-count {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
     }
 
-    .endpoints-list { display: flex; flex-direction: column; gap: 6px; }
-    .endpoint-card {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid rgba(255,255,255,0.05);
+    /* Endpoint cards */
+    .endpoints { display: flex; flex-direction: column; gap: 6px; }
+    .ep-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 14px 18px;
       display: grid;
-      grid-template-columns: 10px 1fr auto;
+      grid-template-columns: 12px 1fr auto;
       gap: 14px;
       align-items: center;
-      transition: border-color 0.2s, background 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .endpoint-card:hover {
-      border-color: rgba(129,140,248,0.15);
-      background: rgba(255,255,255,0.03);
+    .ep-card:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 0 20px rgba(99,102,241,0.04);
     }
-    .status-dot {
+    .ep-card.primary {
+      background: var(--bg-elevated);
+      border-color: rgba(99,102,241,0.1);
+      box-shadow: 0 0 30px rgba(99,102,241,0.03);
+    }
+
+    /* Status indicator */
+    .status-pip {
       width: 10px;
       height: 10px;
       border-radius: 50%;
+      flex-shrink: 0;
     }
-    .status-dot.up {
-      background: #22c55e;
-      box-shadow: 0 0 8px rgba(34,197,94,0.5), 0 0 16px rgba(34,197,94,0.2);
+    .status-pip.up {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green-glow), 0 0 20px rgba(34,197,94,0.08);
     }
-    .status-dot.down {
-      background: #ef4444;
-      box-shadow: 0 0 8px rgba(239,68,68,0.5), 0 0 16px rgba(239,68,68,0.2);
+    .status-pip.down {
+      background: var(--red);
+      box-shadow: 0 0 8px var(--red-glow), 0 0 20px rgba(239,68,68,0.08);
     }
-    .status-dot.unknown {
-      background: #f59e0b;
-      box-shadow: 0 0 8px rgba(245,158,11,0.4);
+    .status-pip.unknown {
+      background: var(--amber);
+      box-shadow: 0 0 8px rgba(245,158,11,0.2);
     }
-    .ep-info { min-width: 0; }
-    .ep-name-row {
+
+    /* Endpoint info */
+    .ep-body { min-width: 0; }
+    .ep-top {
       display: flex;
       align-items: center;
       gap: 8px;
+      margin-bottom: 2px;
     }
     .ep-name {
-      font-weight: 500;
       font-size: 14px;
+      font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .badge-x402 {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
+    .tag {
       font-size: 10px;
       font-weight: 600;
-      letter-spacing: 0.3px;
-      padding: 2px 7px;
+      letter-spacing: 0.5px;
+      padding: 2px 6px;
       border-radius: 4px;
-      background: rgba(129,140,248,0.12);
-      color: #a5b4fc;
-      border: 1px solid rgba(129,140,248,0.15);
       flex-shrink: 0;
     }
-    .badge-x402.active {
+    .tag-x402 {
+      background: rgba(99,102,241,0.12);
+      color: #a5b4fc;
+      border: 1px solid rgba(99,102,241,0.12);
+    }
+    .tag-x402.active {
       background: rgba(34,197,94,0.1);
-      color: #4ade80;
-      border-color: rgba(34,197,94,0.15);
+      color: #86efac;
+      border-color: rgba(34,197,94,0.12);
     }
     .ep-url {
-      font-size: 11px;
-      color: #4b5563;
+      font-size: 12px;
+      color: var(--text-muted);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-top: 2px;
+      font-family: 'JetBrains Mono', monospace;
     }
+
+    /* Sparkline bar (probe history) */
+    .sparkline {
+      display: flex;
+      gap: 1.5px;
+      align-items: flex-end;
+      height: 18px;
+      margin-top: 6px;
+    }
+    .spark-bar {
+      flex: 1;
+      min-width: 3px;
+      max-width: 8px;
+      border-radius: 1px;
+      transition: opacity 0.15s;
+    }
+    .spark-bar.ok { background: var(--green); opacity: 0.7; }
+    .spark-bar.ok:hover { opacity: 1; }
+    .spark-bar.fail { background: var(--red); opacity: 0.8; }
+    .spark-bar.fail:hover { opacity: 1; }
+    .spark-bar.empty { background: rgba(255,255,255,0.04); }
+
+    /* Endpoint metrics */
     .ep-metrics {
       display: flex;
-      gap: 18px;
+      gap: 16px;
       align-items: center;
       flex-shrink: 0;
     }
     .metric { text-align: right; }
-    .metric-value {
-      font-size: 18px;
-      font-weight: 600;
+    .metric-val {
+      font-size: 20px;
+      font-weight: 700;
       font-variant-numeric: tabular-nums;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
     }
-    .metric-label {
+    .metric-lbl {
       font-size: 10px;
-      color: #6b7280;
+      color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.5px;
     }
 
-    .probe-panel {
-      background: rgba(255,255,255,0.015);
-      border: 1px solid rgba(255,255,255,0.04);
+    /* Probe feed */
+    .feed-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
       border-radius: 12px;
       padding: 16px;
-    }
-    .probe-feed {
       display: flex;
       flex-direction: column;
-      gap: 2px;
-      max-height: 520px;
-      overflow-y: auto;
     }
-    .probe-feed::-webkit-scrollbar { width: 4px; }
-    .probe-feed::-webkit-scrollbar-track { background: transparent; }
-    .probe-feed::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+    .feed-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      max-height: 580px;
+      overflow-y: auto;
+      margin-top: 8px;
+    }
+    .feed-list::-webkit-scrollbar { width: 3px; }
+    .feed-list::-webkit-scrollbar-track { background: transparent; }
+    .feed-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
 
-    .probe-entry {
+    .feed-row {
       display: grid;
-      grid-template-columns: 14px 52px 1fr auto;
+      grid-template-columns: 14px 50px 1fr auto;
       gap: 8px;
       align-items: center;
-      padding: 5px 8px;
-      border-radius: 6px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
       font-size: 12px;
-      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
     }
-    .probe-entry:nth-child(odd) { background: rgba(255,255,255,0.015); }
-    .probe-icon { font-size: 11px; font-weight: bold; }
-    .probe-icon.ok { color: #22c55e; }
-    .probe-icon.fail { color: #ef4444; }
-    .probe-icon.timeout { color: #f59e0b; }
-    .probe-time { color: #4b5563; flex-shrink: 0; font-size: 11px; }
-    .probe-name {
+    .feed-row:nth-child(odd) { background: rgba(255,255,255,0.015); }
+    .feed-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      justify-self: center;
+    }
+    .feed-dot.ok { background: var(--green); box-shadow: 0 0 4px var(--green-glow); }
+    .feed-dot.fail { background: var(--red); box-shadow: 0 0 4px var(--red-glow); }
+    .feed-dot.warn { background: var(--amber); }
+    .feed-time {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+    .feed-name {
+      color: var(--text-secondary);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      color: #9ca3af;
     }
-    .probe-result {
-      margin-left: auto;
-      flex-shrink: 0;
+    .feed-result {
       font-size: 11px;
       font-weight: 500;
+      text-align: right;
     }
-    .probe-result.ok { color: #6b7280; }
-    .probe-result.fail { color: #ef4444; }
-    .probe-result.timeout { color: #f59e0b; }
+    .feed-result.ok { color: var(--text-muted); }
+    .feed-result.fail { color: var(--red); }
+    .feed-result.warn { color: var(--amber); }
 
+    /* Footer */
     .footer {
-      padding: 16px 32px;
-      border-top: 1px solid rgba(255,255,255,0.04);
+      padding: 20px 0;
+      border-top: 1px solid var(--border);
       font-size: 12px;
-      color: #374151;
+      color: var(--text-muted);
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .footer a { color: #6366f1; text-decoration: none; }
+    .footer a { color: var(--accent); text-decoration: none; }
     .footer a:hover { color: #818cf8; }
-    .footer-right {
+    .live-badge {
       display: flex;
       align-items: center;
-      gap: 12px;
-    }
-    .live-indicator {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 11px;
-      color: #4b5563;
+      gap: 6px;
     }
     .live-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #22c55e;
-      animation: pulse 2s ease-in-out infinite;
+      background: var(--green);
+      animation: beacon-pulse 3s ease-in-out infinite;
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="logo">
-      <div class="logo-dot"></div>
-      Beacon
-    </div>
-    <div class="header-meta">
-      <a href="/api/docs">API</a>
-      <span class="header-sep">|</span>
-      <a href="/api/health">Health</a>
-      <span class="header-sep">|</span>
-      <a href="/api/summary">JSON</a>
-    </div>
-  </div>
+  <div class="bg-layers"></div>
+  <div class="noise"></div>
 
-  <div class="subtitle">
-    Trust scores for the <strong>x402 agent economy</strong> on Stellar. Probing every 5 minutes.
-  </div>
-
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-label">Endpoints</div>
-      <div class="stat-value" id="stat-endpoints">-</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Probes (24h)</div>
-      <div class="stat-value" id="stat-probes">-</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Avg Uptime</div>
-      <div class="stat-value green" id="stat-uptime">-</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Network</div>
-      <div class="stat-value" style="font-size:15px;color:#818cf8;">Stellar Testnet</div>
-    </div>
-  </div>
-
-  <div class="content">
-    <div>
-      <div class="section-title">Monitored Endpoints</div>
-      <div class="endpoints-list" id="endpoints-list"></div>
-    </div>
-    <div>
-      <div class="probe-panel">
-        <div class="section-title" style="margin-bottom:10px;">Live Probe Feed</div>
-        <div class="probe-feed" id="probe-feed"></div>
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-beacon"></div>
+        <span class="logo-text">Beacon</span>
+      </div>
+      <div class="nav-links">
+        <a href="/api/docs">API Docs</a>
+        <a href="/api/health">Health</a>
+        <a href="/api/summary">JSON</a>
       </div>
     </div>
-  </div>
 
-  <div class="footer">
-    <span>Beacon v0.1.0 &middot; Stellar Hacks 2026</span>
-    <div class="footer-right">
-      <div class="live-indicator">
-        <div class="live-dot"></div>
-        Auto-refresh 10s
+    <div class="hero">
+      <div class="hero-score">
+        <div class="score-number" id="hero-trust">--</div>
+        <div class="score-label">Avg Trust Score</div>
       </div>
-      <span>Paid queries: $0.001 USDC via <a href="/api/docs">x402</a></span>
+      <div class="hero-meta">
+        <div class="hero-desc">
+          Trust layer for the <strong>x402 agent economy</strong> on Stellar.
+          Agents check Beacon before spending money on API calls.
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><b id="stat-endpoints">-</b> endpoints</div>
+          <div class="hero-stat"><b id="stat-probes">-</b> probes today</div>
+          <div class="hero-stat"><b id="stat-uptime">-</b>% avg uptime</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <div>
+        <div class="section-header">
+          <span class="section-title">Monitored Endpoints</span>
+          <span class="section-count" id="ep-count"></span>
+        </div>
+        <div class="endpoints" id="endpoints"></div>
+      </div>
+      <div>
+        <div class="feed-panel">
+          <div class="section-header">
+            <span class="section-title">Live Probes</span>
+            <div class="live-badge">
+              <div class="live-dot"></div>
+              <span style="font-size:11px;color:var(--text-muted);">every 5m</span>
+            </div>
+          </div>
+          <div class="feed-list" id="feed"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>Beacon v0.1 &middot; Stellar Hacks 2026 &middot; <a href="https://github.com/Yonkoo11/beacon">GitHub</a></span>
+      <span>Paid queries: $0.001 USDC via <a href="/api/docs">x402</a> on Stellar</span>
     </div>
   </div>
 
   <script>
-    function colorForScore(score) {
-      if (score >= 80) return '#22c55e';
-      if (score >= 50) return '#f59e0b';
-      return '#ef4444';
+    function colorForScore(s) {
+      if (s >= 80) return 'var(--green)';
+      if (s >= 50) return 'var(--amber)';
+      return 'var(--red)';
     }
 
     function timeAgo(ts) {
-      const diff = Date.now() - ts;
-      if (diff < 60000) return Math.round(diff / 1000) + 's ago';
-      if (diff < 3600000) return Math.round(diff / 60000) + 'm ago';
-      return Math.round(diff / 3600000) + 'h ago';
+      const d = Date.now() - ts;
+      if (d < 60000) return Math.round(d / 1000) + 's';
+      if (d < 3600000) return Math.round(d / 60000) + 'm';
+      return Math.round(d / 3600000) + 'h';
     }
 
-    function formatTime(ts) {
+    function fmtTime(ts) {
       return new Date(ts).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
-    function shortName(url) {
+    function shortUrl(url) {
       try {
         const u = new URL(url);
-        const path = u.pathname.replace(/^\//, '');
-        return u.hostname.replace('www.', '') + (path ? '/' + path.split('?')[0] : '');
+        const p = u.pathname.replace(/^\//, '');
+        return u.hostname.replace('www.', '') + (p ? '/' + p.split('?')[0] : '');
       } catch { return url; }
     }
 
-    function createEndpointCard(ep) {
+    function buildSparkline(history) {
+      const el = document.createElement('div');
+      el.className = 'sparkline';
+      const maxBars = 30;
+      const bars = history.slice(-maxBars);
+      // Pad with empty bars if fewer
+      for (let i = bars.length; i < maxBars; i++) {
+        const b = document.createElement('div');
+        b.className = 'spark-bar empty';
+        b.style.height = '4px';
+        el.appendChild(b);
+      }
+      for (const probe of bars) {
+        const b = document.createElement('div');
+        if (probe.success) {
+          // Height from latency (lower = taller, capped)
+          const h = Math.max(4, Math.min(18, 18 - (probe.latency_ms / 2000) * 14));
+          b.className = 'spark-bar ok';
+          b.style.height = h + 'px';
+        } else {
+          b.className = 'spark-bar fail';
+          b.style.height = '18px';
+        }
+        el.appendChild(b);
+      }
+      return el;
+    }
+
+    function buildEndpointCard(ep, idx) {
       const card = document.createElement('div');
-      card.className = 'endpoint-card';
+      card.className = 'ep-card' + (idx < 3 && ep.trust_score >= 70 ? ' primary' : '');
 
-      const dot = document.createElement('div');
-      dot.className = 'status-dot ' + ep.status;
+      // Status pip
+      const pip = document.createElement('div');
+      pip.className = 'status-pip ' + ep.status;
 
-      const info = document.createElement('div');
-      info.className = 'ep-info';
+      // Body
+      const body = document.createElement('div');
+      body.className = 'ep-body';
 
-      const nameRow = document.createElement('div');
-      nameRow.className = 'ep-name-row';
-      const name = document.createElement('div');
+      const top = document.createElement('div');
+      top.className = 'ep-top';
+      const name = document.createElement('span');
       name.className = 'ep-name';
       name.textContent = ep.name;
-      nameRow.appendChild(name);
+      top.appendChild(name);
 
-      // x402 badge
       if (ep.x402_valid_rate > 0) {
-        const badge = document.createElement('span');
-        badge.className = 'badge-x402 active';
-        badge.textContent = 'x402';
-        nameRow.appendChild(badge);
+        const tag = document.createElement('span');
+        tag.className = 'tag tag-x402 active';
+        tag.textContent = 'x402';
+        top.appendChild(tag);
       } else if (ep.x402_network) {
-        const badge = document.createElement('span');
-        badge.className = 'badge-x402';
-        badge.textContent = 'x402';
-        nameRow.appendChild(badge);
+        const tag = document.createElement('span');
+        tag.className = 'tag tag-x402';
+        tag.textContent = 'x402';
+        top.appendChild(tag);
       }
 
       const url = document.createElement('div');
       url.className = 'ep-url';
-      url.textContent = shortName(ep.url);
-      info.appendChild(nameRow);
-      info.appendChild(url);
+      url.textContent = shortUrl(ep.url);
 
+      body.appendChild(top);
+      body.appendChild(url);
+
+      // Sparkline
+      if (ep.probe_history && ep.probe_history.length > 0) {
+        body.appendChild(buildSparkline(ep.probe_history));
+      }
+
+      // Metrics
       const metrics = document.createElement('div');
       metrics.className = 'ep-metrics';
 
-      // Trust score
-      const trustMetric = document.createElement('div');
-      trustMetric.className = 'metric';
-      const trustVal = document.createElement('div');
-      trustVal.className = 'metric-value';
-      trustVal.style.color = colorForScore(ep.trust_score);
-      trustVal.textContent = ep.trust_score;
-      const trustLabel = document.createElement('div');
-      trustLabel.className = 'metric-label';
-      trustLabel.textContent = 'Trust';
-      trustMetric.appendChild(trustVal);
-      trustMetric.appendChild(trustLabel);
+      // Trust
+      const tm = document.createElement('div');
+      tm.className = 'metric';
+      const tv = document.createElement('div');
+      tv.className = 'metric-val';
+      tv.style.color = colorForScore(ep.trust_score);
+      tv.textContent = ep.trust_score;
+      const tl = document.createElement('div');
+      tl.className = 'metric-lbl';
+      tl.textContent = 'Trust';
+      tm.appendChild(tv);
+      tm.appendChild(tl);
 
       // Uptime
-      const uptimeMetric = document.createElement('div');
-      uptimeMetric.className = 'metric';
-      const uptimeVal = document.createElement('div');
-      uptimeVal.className = 'metric-value';
-      uptimeVal.style.color = colorForScore(ep.uptime_score);
-      uptimeVal.textContent = ep.uptime_score + '%';
-      const uptimeLabel = document.createElement('div');
-      uptimeLabel.className = 'metric-label';
-      uptimeLabel.textContent = 'Uptime';
-      uptimeMetric.appendChild(uptimeVal);
-      uptimeMetric.appendChild(uptimeLabel);
+      const um = document.createElement('div');
+      um.className = 'metric';
+      const uv = document.createElement('div');
+      uv.className = 'metric-val';
+      uv.style.color = colorForScore(ep.uptime_score);
+      uv.style.fontSize = '16px';
+      uv.textContent = ep.uptime_score + '%';
+      const ul = document.createElement('div');
+      ul.className = 'metric-lbl';
+      ul.textContent = 'Uptime';
+      um.appendChild(uv);
+      um.appendChild(ul);
 
-      // Latency (p95)
-      const latMetric = document.createElement('div');
-      latMetric.className = 'metric';
-      const latVal = document.createElement('div');
-      latVal.className = 'metric-value';
-      latVal.style.fontSize = '14px';
-      latVal.style.color = '#9ca3af';
-      if (ep.total_probes_24h > 0 && ep.avg_latency_ms > 0) {
-        latVal.textContent = ep.avg_latency_ms + 'ms';
-      } else {
-        latVal.textContent = '-';
-      }
-      const latLabel = document.createElement('div');
-      latLabel.className = 'metric-label';
-      latLabel.textContent = 'Avg';
-      latMetric.appendChild(latVal);
-      latMetric.appendChild(latLabel);
+      metrics.appendChild(tm);
+      metrics.appendChild(um);
 
-      // Last probed
-      const lastMetric = document.createElement('div');
-      lastMetric.className = 'metric';
-      const lastVal = document.createElement('div');
-      lastVal.className = 'metric-value';
-      lastVal.style.fontSize = '12px';
-      lastVal.style.color = '#6b7280';
-      lastVal.textContent = ep.last_probed ? timeAgo(ep.last_probed) : 'never';
-      const lastLabel = document.createElement('div');
-      lastLabel.className = 'metric-label';
-      lastLabel.textContent = 'Last';
-      lastMetric.appendChild(lastVal);
-      lastMetric.appendChild(lastLabel);
-
-      metrics.appendChild(trustMetric);
-      metrics.appendChild(uptimeMetric);
-      metrics.appendChild(latMetric);
-      metrics.appendChild(lastMetric);
-
-      card.appendChild(dot);
-      card.appendChild(info);
+      card.appendChild(pip);
+      card.appendChild(body);
       card.appendChild(metrics);
       return card;
     }
 
-    function probeResultText(p) {
-      if (p.success) {
-        return { text: p.latency_ms + 'ms', cls: 'ok' };
-      }
-      if (p.error && p.error.includes('timeout')) {
-        return { text: 'timeout', cls: 'timeout' };
-      }
-      if (p.error && p.error.includes('ECONNREFUSED')) {
-        return { text: 'refused', cls: 'fail' };
-      }
-      if (p.error && p.error.includes('ENOTFOUND')) {
-        return { text: 'dns fail', cls: 'fail' };
-      }
-      if (p.status_code && p.status_code >= 500) {
-        return { text: p.status_code + ' err', cls: 'fail' };
-      }
-      if (p.error) {
-        return { text: 'error', cls: 'fail' };
-      }
+    function probeResult(p) {
+      if (p.success) return { text: p.latency_ms + 'ms', cls: 'ok' };
+      if (p.error && p.error.includes('timeout')) return { text: 'timeout', cls: 'warn' };
+      if (p.status_code >= 500) return { text: p.status_code + '', cls: 'fail' };
+      if (p.error) return { text: 'error', cls: 'fail' };
       return { text: p.latency_ms + 'ms', cls: 'ok' };
     }
 
-    function createProbeEntry(p) {
-      const entry = document.createElement('div');
-      entry.className = 'probe-entry';
+    function buildFeedRow(p) {
+      const row = document.createElement('div');
+      row.className = 'feed-row';
+      const r = probeResult(p);
 
-      const result = probeResultText(p);
-
-      const icon = document.createElement('span');
-      icon.className = 'probe-icon ' + (p.success ? 'ok' : result.cls === 'timeout' ? 'timeout' : 'fail');
-      icon.textContent = p.success ? '\u2713' : '\u2717';
+      const dot = document.createElement('div');
+      dot.className = 'feed-dot ' + (p.success ? 'ok' : r.cls === 'warn' ? 'warn' : 'fail');
 
       const time = document.createElement('span');
-      time.className = 'probe-time';
-      time.textContent = formatTime(p.timestamp);
+      time.className = 'feed-time';
+      time.textContent = fmtTime(p.timestamp);
 
       const name = document.createElement('span');
-      name.className = 'probe-name';
-      name.textContent = shortName(p.url);
+      name.className = 'feed-name';
+      name.textContent = shortUrl(p.url);
 
-      const latency = document.createElement('span');
-      latency.className = 'probe-result ' + result.cls;
-      latency.textContent = result.text;
+      const result = document.createElement('span');
+      result.className = 'feed-result ' + r.cls;
+      result.textContent = r.text;
 
-      entry.appendChild(icon);
-      entry.appendChild(time);
-      entry.appendChild(name);
-      entry.appendChild(latency);
-      return entry;
+      row.appendChild(dot);
+      row.appendChild(time);
+      row.appendChild(name);
+      row.appendChild(result);
+      return row;
     }
 
     async function refresh() {
       try {
-        const resp = await fetch('/api/summary');
-        const data = await resp.json();
+        const data = await (await fetch('/api/summary')).json();
+
+        // Hero score
+        const avgTrust = data.endpoints.length > 0
+          ? Math.round(data.endpoints.reduce((a, e) => a + e.trust_score, 0) / data.endpoints.length)
+          : 0;
+        const heroEl = document.getElementById('hero-trust');
+        heroEl.textContent = avgTrust;
+        heroEl.style.color = colorForScore(avgTrust);
+        // Match glow to score color
+        const heroScore = document.querySelector('.hero-score');
+        if (avgTrust >= 80) {
+          heroScore.style.setProperty('--hero-glow', 'rgba(34,197,94,0.12)');
+        } else if (avgTrust >= 50) {
+          heroScore.style.setProperty('--hero-glow', 'rgba(245,158,11,0.12)');
+        } else {
+          heroScore.style.setProperty('--hero-glow', 'rgba(239,68,68,0.1)');
+        }
 
         document.getElementById('stat-endpoints').textContent = data.stats.endpoints_tracked;
         document.getElementById('stat-probes').textContent = data.stats.probes_today;
+        document.getElementById('stat-uptime').textContent = data.stats.avg_uptime;
+        document.getElementById('ep-count').textContent = data.endpoints.length + ' tracked';
 
-        const uptimeEl = document.getElementById('stat-uptime');
-        uptimeEl.textContent = data.stats.avg_uptime + '%';
-        uptimeEl.className = 'stat-value ' + (data.stats.avg_uptime >= 80 ? 'green' : data.stats.avg_uptime >= 50 ? 'amber' : 'red');
-
-        const list = document.getElementById('endpoints-list');
+        // Endpoints
+        const list = document.getElementById('endpoints');
         list.replaceChildren();
         data.endpoints
           .sort((a, b) => b.trust_score - a.trust_score)
-          .forEach(ep => list.appendChild(createEndpointCard(ep)));
+          .forEach((ep, i) => list.appendChild(buildEndpointCard(ep, i)));
 
-        const feed = document.getElementById('probe-feed');
+        // Feed
+        const feed = document.getElementById('feed');
         feed.replaceChildren();
-        data.recent_probes.forEach(p => feed.appendChild(createProbeEntry(p)));
+        data.recent_probes.forEach(p => feed.appendChild(buildFeedRow(p)));
       } catch (err) {
         console.error('Refresh failed:', err);
       }
