@@ -2,7 +2,7 @@
  * Swaps XLM for USDC on Stellar testnet DEX.
  * Alternative to Circle faucet (which requires reCAPTCHA).
  *
- * Usage: npx tsx src/fund-usdc.ts
+ * Usage: npx tsx scripts/fund-usdc.ts
  */
 import "dotenv/config";
 import {

@@ -1,6 +1,6 @@
 /**
  * Sets up USDC trustline on Stellar testnet for the Beacon wallet.
- * Run once: npx tsx src/setup-trustline.ts
+ * Run once: npx tsx scripts/setup-trustline.ts
  */
 import "dotenv/config";
 import {

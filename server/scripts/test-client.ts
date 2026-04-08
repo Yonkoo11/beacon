@@ -2,7 +2,7 @@
  * Test client that makes a real x402 payment on Stellar testnet
  * to query Beacon's /api/score endpoint.
  *
- * Usage: npx tsx src/test-client.ts
+ * Usage: npx tsx scripts/test-client.ts
  * Requires: STELLAR_SECRET_KEY in .env (funded testnet account)
  */
 import "dotenv/config";
