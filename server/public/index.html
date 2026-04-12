@@ -398,16 +398,16 @@
     .feed-scroll::-webkit-scrollbar-track { background: transparent; }
     .feed-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
     .feed-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px;
     }
     @media (max-width: 680px) { .feed-grid { grid-template-columns: 1fr; } }
 
     .feed-row {
-      display: grid; grid-template-columns: 5px 48px 1fr auto;
-      gap: 8px; align-items: center;
+      display: grid; grid-template-columns: 5px 70px 1fr auto;
+      gap: 10px; align-items: center;
       padding: 5px 0;
       border-bottom: 1px solid rgba(255,255,255,0.02);
-      font-family: 'JetBrains Mono', monospace; font-size: 14px;
+      font-family: 'JetBrains Mono', monospace; font-size: 13px;
       opacity: 0; animation: fade-in 0.3s var(--ease) forwards;
     }
     /* Stagger feed rows */
