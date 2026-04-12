@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beacon - x402 Trust Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-base: #0b0d0f;
+      --bg-surface: #111315;
+      --bg-elevated: #171a1d;
+      --border: rgba(255,255,255,0.05);
+      --border-hover: rgba(74,222,128,0.15);
+      --text-primary: #e4e8ec;
+      --text-secondary: #6b7280;
+      --text-muted: #374151;
+      --green: #4ade80;
+      --green-dim: #22c55e;
+      --green-glow: rgba(74,222,128,0.12);
+      --green-deep: rgba(74,222,128,0.04);
+      --amber: #fbbf24;
+      --red: #f87171;
+      --red-glow: rgba(248,113,113,0.1);
+      --ease: cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* Minimal background: just one subtle gradient */
+    .bg-glow {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    }
+    .bg-glow::before {
+      content: ''; position: absolute; top: -40%; left: 50%; transform: translateX(-50%);
+      width: 100%; height: 80%;
+      background: radial-gradient(ellipse, rgba(74,222,128,0.04) 0%, transparent 60%);
+    }
+    .noise {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat; background-size: 256px 256px;
+    }
+
+    .shell { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 32px; }
+
+    /* Header - barely there */
+    .header { padding: 32px 0; display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; gap: 8px; }
+    .logo-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+      box-shadow: 0 0 10px var(--green-glow);
+      animation: breathe 3s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1; box-shadow: 0 0 16px rgba(74,222,128,0.2); }
+    }
+    .logo-text { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; }
+    .nav-links { display: flex; gap: 20px; }
+    .nav-links a {
+      font-size: 14px; color: var(--text-muted); text-decoration: none;
+      transition: color 0.16s var(--ease); padding: 8px 0;
+    }
+    .nav-links a:hover { color: var(--green); }
+    .nav-links a:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(74,222,128,0.3); border-radius: 4px; }
+
+    /* Hero - massive number, nothing else */
+    .hero {
+      padding: 64px 0 56px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-score {
+      font-size: 120px; font-weight: 700; letter-spacing: -6px;
+      font-variant-numeric: tabular-nums; line-height: 0.9;
+      position: relative;
+    }
+    .hero-score::after {
+      content: '';
+      position: absolute; top: 50%; left: -20px;
+      width: calc(100% + 40px); height: 120px;
+      transform: translateY(-50%);
+      background: radial-gradient(ellipse, rgba(74,222,128,0.06) 0%, transparent 70%);
+      pointer-events: none; z-index: -1;
+    }
+    .hero-meta {
+      display: flex; align-items: baseline; gap: 32px; margin-top: 16px;
+    }
+    .hero-label {
+      font-size: 14px; color: var(--text-muted); font-weight: 400;
+    }
+    .hero-stat {
+      font-size: 14px; color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+    .hero-stat b { font-weight: 600; color: var(--text-primary); }
+
+    /* Endpoint list - clean vertical stack */
+    .section { padding: 32px 0; }
+    .sec-title {
+      font-size: 12px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 16px;
+    }
+
+    .endpoints { display: flex; flex-direction: column; }
+    .ep-item {
+      display: grid;
+      grid-template-columns: 8px 1fr 200px 64px 64px;
+      gap: 16px; align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.18s var(--ease), transform 0.08s var(--ease);
+    }
+    .ep-item:first-child { border-top: 1px solid var(--border); }
+    .ep-item:hover { background: var(--green-deep); }
+    .ep-item:active { transform: scale(0.999); }
+    .ep-item:focus-visible { outline: none; box-shadow: inset 0 0 0 2px rgba(74,222,128,0.3); }
+
+    .s-dot { width: 6px; height: 6px; border-radius: 50%; justify-self: center; }
+    .s-dot.up { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+    .s-dot.down { background: var(--red); box-shadow: 0 0 6px var(--red-glow); }
+    .s-dot.unknown { background: var(--amber); }
+
+    .ep-info { min-width: 0; }
+    .ep-name { font-size: 15px; font-weight: 500; margin-bottom: 2px; }
+    .ep-url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px; color: var(--text-muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* Vertical signal bars (probe history) */
+    .signal-bars {
+      display: flex; gap: 2px; align-items: flex-end; height: 24px;
+      justify-content: flex-end;
+    }
+    .sig-bar {
+      width: 4px; border-radius: 1px;
+      transition: opacity 0.15s var(--ease);
+    }
+    .sig-bar.ok { background: var(--green); opacity: 0.35; }
+    .sig-bar.ok:hover { opacity: 0.8; }
+    .sig-bar.fail { background: var(--red); opacity: 0.7; }
+    .sig-bar.fail:hover { opacity: 1; }
+    .sig-bar.empty { background: rgba(255,255,255,0.03); }
+
+    .ep-trust {
+      font-size: 20px; font-weight: 700; text-align: right;
+      font-variant-numeric: tabular-nums; letter-spacing: -0.5px;
+    }
+    .ep-uptime {
+      font-size: 14px; font-weight: 500; text-align: right;
+      font-variant-numeric: tabular-nums; color: var(--text-secondary);
+    }
+
+    /* Feed - inline below endpoints */
+    .feed-section { padding: 32px 0 48px; }
+    .feed-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 2px 32px;
+    }
+    @media (max-width: 640px) { .feed-grid { grid-template-columns: 1fr; } }
+    .feed-row {
+      display: grid; grid-template-columns: 6px 50px 1fr auto;
+      gap: 8px; align-items: center;
+      padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.02);
+      font-family: 'JetBrains Mono', monospace; font-size: 14px;
+    }
+    .f-dot { width: 4px; height: 4px; border-radius: 50%; justify-self: center; }
+    .f-dot.ok { background: var(--green); }
+    .f-dot.fail { background: var(--red); }
+    .f-dot.warn { background: var(--amber); }
+    .f-time { color: var(--text-muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+    .f-name { color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+    .f-result { font-size: 14px; font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
+    .f-result.ok { color: var(--text-muted); }
+    .f-result.fail { color: var(--red); }
+    .f-result.warn { color: var(--amber); }
+
+    .footer {
+      padding: 24px 0; border-top: 1px solid var(--border);
+      font-size: 14px; color: var(--text-muted);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .footer a { color: var(--green-dim); text-decoration: none; transition: color 0.16s var(--ease); }
+    .footer a:hover { color: var(--green); }
+    .footer a:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(74,222,128,0.3); border-radius: 4px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .logo-dot { animation: none; opacity: 1; }
+      *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow"></div>
+  <div class="noise"></div>
+  <div class="shell">
+    <div class="header">
+      <div class="logo"><div class="logo-dot"></div><span class="logo-text">Beacon</span></div>
+      <div class="nav-links">
+        <a href="/api/docs">API</a>
+        <a href="/api/health">Health</a>
+        <a href="/api/summary">JSON</a>
+      </div>
+    </div>
+    <div class="hero">
+      <div class="hero-score" id="hero-trust">--</div>
+      <div class="hero-meta">
+        <span class="hero-label">average trust across all endpoints</span>
+        <span class="hero-stat"><b id="stat-ep">-</b> endpoints</span>
+        <span class="hero-stat"><b id="stat-probes">-</b> probes</span>
+        <span class="hero-stat"><b id="stat-uptime">-</b>% uptime</span>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-title">Endpoints</div>
+      <div class="endpoints" id="endpoints"></div>
+    </div>
+    <div class="feed-section">
+      <div class="sec-title">Recent Probes</div>
+      <div class="feed-grid" id="feed"></div>
+    </div>
+    <div class="footer">
+      <span>Beacon · Stellar Hacks 2026 · <a href="https://github.com/Yonkoo11/beacon">GitHub</a></span>
+      <span>$0.001 USDC via <a href="/api/docs">x402</a></span>
+    </div>
+  </div>
+  <script>
+    function scoreColor(s){if(s>=80)return'var(--green)';if(s>=50)return'var(--amber)';return'var(--red)';}
+    function fmtTime(ts){return new Date(ts).toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+    function shortUrl(url){try{const u=new URL(url);const p=u.pathname.replace(/^\//,'');return u.hostname.replace('www.','')+( p?'/'+p.split('?')[0]:'');}catch{return url;}}
+
+    function buildSignalBars(history){
+      const el=document.createElement('div');el.className='signal-bars';
+      const max=30;const bars=history.slice(-max);
+      for(let i=bars.length;i<max;i++){const b=document.createElement('div');b.className='sig-bar empty';b.style.height='4px';el.appendChild(b);}
+      for(const p of bars){const b=document.createElement('div');
+        if(p.success){const h=Math.max(4,Math.min(24,24-(p.latency_ms/2000)*20));b.className='sig-bar ok';b.style.height=h+'px';}
+        else{b.className='sig-bar fail';b.style.height='24px';}
+        el.appendChild(b);}
+      return el;
+    }
+
+    function buildEp(ep,idx){
+      const row=document.createElement('div');row.className='ep-item';row.tabIndex=0;
+      const dot=document.createElement('div');dot.className='s-dot '+ep.status;
+      const info=document.createElement('div');info.className='ep-info';
+      const name=document.createElement('div');name.className='ep-name';
+      let nameText=ep.name;
+      if(ep.x402_valid_rate>0)nameText+=' ·x402';
+      name.textContent=nameText;
+      const url=document.createElement('div');url.className='ep-url';url.textContent=shortUrl(ep.url);
+      info.appendChild(name);info.appendChild(url);
+
+      const bars=ep.probe_history&&ep.probe_history.length>0?buildSignalBars(ep.probe_history):document.createElement('div');
+
+      const trust=document.createElement('div');trust.className='ep-trust';
+      trust.style.color=scoreColor(ep.trust_score);trust.textContent=ep.trust_score;
+
+      const uptime=document.createElement('div');uptime.className='ep-uptime';
+      uptime.textContent=ep.uptime_score+'%';
+
+      row.appendChild(dot);row.appendChild(info);row.appendChild(bars);row.appendChild(trust);row.appendChild(uptime);
+      return row;
+    }
+
+    function probeR(p){if(p.success)return{text:p.latency_ms+'ms',cls:'ok'};if(p.error&&p.error.includes('timeout'))return{text:'timeout',cls:'warn'};if(p.status_code>=500)return{text:p.status_code+'',cls:'fail'};return{text:'error',cls:'fail'};}
+    function buildFeed(p){
+      const row=document.createElement('div');row.className='feed-row';const r=probeR(p);
+      const dot=document.createElement('div');dot.className='f-dot '+(p.success?'ok':r.cls==='warn'?'warn':'fail');
+      const time=document.createElement('span');time.className='f-time';time.textContent=fmtTime(p.timestamp);
+      const name=document.createElement('span');name.className='f-name';name.textContent=shortUrl(p.url);
+      const result=document.createElement('span');result.className='f-result '+r.cls;result.textContent=r.text;
+      row.appendChild(dot);row.appendChild(time);row.appendChild(name);row.appendChild(result);return row;
+    }
+
+    async function refresh(){
+      try{
+        const data=await(await fetch('/api/summary')).json();
+        const avg=data.endpoints.length>0?Math.round(data.endpoints.reduce((a,e)=>a+e.trust_score,0)/data.endpoints.length):0;
+        const h=document.getElementById('hero-trust');h.textContent=avg;h.style.color=scoreColor(avg);
+
+        document.getElementById('stat-ep').textContent=data.stats.endpoints_tracked;
+        document.getElementById('stat-probes').textContent=data.stats.probes_today;
+        document.getElementById('stat-uptime').textContent=data.stats.avg_uptime;
+
+        const list=document.getElementById('endpoints');list.replaceChildren();
+        data.endpoints.sort((a,b)=>b.trust_score-a.trust_score).forEach((ep,i)=>list.appendChild(buildEp(ep,i)));
+
+        const feed=document.getElementById('feed');feed.replaceChildren();
+        data.recent_probes.forEach(p=>feed.appendChild(buildFeed(p)));
+      }catch(e){console.error('Refresh:',e);}
+    }
+    refresh();setInterval(refresh,10000);
+  </script>
+</body>
+</html>

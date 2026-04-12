@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beacon - x402 Trust Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-base: #080c14;
+      --bg-surface: rgba(255,255,255,0.03);
+      --bg-elevated: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.06);
+      --border-hover: rgba(0,229,255,0.2);
+      --text-primary: #dce4ec;
+      --text-secondary: #7a8b9a;
+      --text-muted: #3e4f5f;
+      --cyan: #00e5ff;
+      --cyan-dim: #00b8d4;
+      --cyan-glow: rgba(0,229,255,0.15);
+      --green: #22c55e;
+      --green-glow: rgba(34,197,94,0.12);
+      --amber: #f59e0b;
+      --amber-glow: rgba(245,158,11,0.12);
+      --red: #ef4444;
+      --red-glow: rgba(239,68,68,0.12);
+      --ease: cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    .bg-layers { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+    .bg-layers::before {
+      content: ''; position: absolute; top: -30%; left: 40%;
+      width: 80%; height: 70%;
+      background: radial-gradient(ellipse, rgba(0,229,255,0.08) 0%, transparent 65%);
+    }
+    .bg-layers::after {
+      content: ''; position: absolute; bottom: -20%; right: -10%;
+      width: 50%; height: 50%;
+      background: radial-gradient(ellipse, rgba(0,100,180,0.06) 0%, transparent 60%);
+    }
+    .noise {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat; background-size: 256px 256px;
+    }
+
+    .shell { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 32px; }
+
+    .header {
+      padding: 28px 0 0; display: flex; align-items: center; justify-content: space-between;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-pip {
+      width: 10px; height: 10px; border-radius: 50%; background: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan-glow), 0 0 30px rgba(0,229,255,0.08);
+      animation: pulse-pip 3s ease-in-out infinite;
+    }
+    @keyframes pulse-pip {
+      0%, 100% { box-shadow: 0 0 12px var(--cyan-glow), 0 0 30px rgba(0,229,255,0.08); }
+      50% { box-shadow: 0 0 20px rgba(0,229,255,0.3), 0 0 50px rgba(0,229,255,0.1); }
+    }
+    .logo-text { font-size: 18px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+    .nav-links { display: flex; gap: 24px; }
+    .nav-links a {
+      font-size: 14px; color: var(--text-muted); text-decoration: none;
+      transition: color 0.16s var(--ease); padding: 8px 0;
+    }
+    .nav-links a:hover { color: var(--cyan); }
+    .nav-links a:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(0,229,255,0.4); border-radius: 4px; }
+
+    /* Hero radar */
+    .hero { padding: 48px 0 40px; display: flex; align-items: center; gap: 64px; }
+    .radar-wrap { position: relative; width: 180px; height: 180px; flex-shrink: 0; }
+    .radar-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(0,229,255,0.12); }
+    .radar-ring.inner { inset: 30px; border-color: rgba(0,229,255,0.08); }
+    .radar-ring.core { inset: 60px; border-color: rgba(0,229,255,0.05); }
+    .radar-sweep {
+      position: absolute; top: 50%; left: 50%;
+      width: 1px; height: 90px;
+      background: linear-gradient(to top, transparent 0%, var(--cyan) 100%);
+      transform-origin: bottom center;
+      animation: sweep 8s linear infinite; opacity: 0.5;
+    }
+    .radar-sweep::after {
+      content: ''; position: absolute; top: 0; left: -30px;
+      width: 60px; height: 90px;
+      background: conic-gradient(from -10deg, transparent, rgba(0,229,255,0.06), transparent 30deg);
+      transform-origin: bottom center;
+    }
+    @keyframes sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .radar-score {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 2;
+    }
+    .score-num {
+      font-size: 56px; font-weight: 700; letter-spacing: -2px;
+      font-variant-numeric: tabular-nums; line-height: 1;
+    }
+    .score-label {
+      font-size: 12px; font-weight: 500; text-transform: uppercase;
+      letter-spacing: 2px; color: var(--text-muted); margin-top: 6px;
+    }
+    .hero-info { display: flex; flex-direction: column; gap: 12px; }
+    .hero-desc { font-size: 15px; color: var(--text-secondary); line-height: 1.6; max-width: 440px; }
+    .hero-desc strong { color: var(--cyan); font-weight: 500; }
+    .hero-stats { display: flex; gap: 32px; }
+    .h-stat { font-size: 14px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .h-stat b { color: var(--text-secondary); font-weight: 600; }
+
+    /* Grid */
+    .main-grid { display: grid; grid-template-columns: 1fr 320px; gap: 24px; padding-bottom: 48px; }
+    @media (max-width: 960px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .hero { flex-direction: column; gap: 32px; }
+    }
+
+    .sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .sec-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+    .sec-count { font-size: 14px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+    /* Endpoint rows */
+    .endpoints { display: flex; flex-direction: column; gap: 4px; }
+    .ep-row {
+      background: var(--bg-surface); backdrop-filter: blur(12px);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px 18px; display: grid;
+      grid-template-columns: 10px 1fr auto; gap: 16px; align-items: center;
+      transition: border-color 0.18s var(--ease), box-shadow 0.18s var(--ease), transform 0.08s var(--ease);
+    }
+    .ep-row:hover { border-color: var(--border-hover); box-shadow: 0 0 24px rgba(0,229,255,0.04); }
+    .ep-row:active { transform: scale(0.997); }
+    .ep-row:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(0,229,255,0.4); }
+    .ep-row.top {
+      background: var(--bg-elevated); border-color: rgba(0,229,255,0.1);
+      box-shadow: 0 0 30px rgba(0,229,255,0.03);
+    }
+    .s-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .s-dot.up { background: var(--green); box-shadow: 0 0 8px var(--green-glow); }
+    .s-dot.down { background: var(--red); box-shadow: 0 0 8px var(--red-glow); }
+    .s-dot.unknown { background: var(--amber); box-shadow: 0 0 8px var(--amber-glow); }
+
+    .ep-body { min-width: 0; }
+    .ep-top-row { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+    .ep-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tag-x402 {
+      font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+      padding: 2px 6px; border-radius: 4px; text-transform: uppercase; flex-shrink: 0;
+    }
+    .tag-x402.active { background: rgba(34,197,94,0.1); color: #86efac; border: 1px solid rgba(34,197,94,0.12); }
+    .tag-x402.inactive { background: rgba(0,229,255,0.08); color: var(--cyan-dim); border: 1px solid rgba(0,229,255,0.08); }
+    .ep-url { font-size: 14px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .led-strip { display: flex; gap: 2px; align-items: center; height: 14px; margin-top: 8px; }
+    .led { flex: 1; min-width: 3px; max-width: 10px; height: 6px; border-radius: 1px; transition: opacity 0.15s var(--ease); }
+    .led.ok { background: var(--green); opacity: 0.6; }
+    .led.ok:hover { opacity: 1; }
+    .led.fail { background: var(--red); opacity: 0.75; }
+    .led.fail:hover { opacity: 1; }
+    .led.empty { background: rgba(255,255,255,0.04); }
+
+    .ep-metrics { display: flex; gap: 20px; align-items: center; flex-shrink: 0; }
+    .metric { text-align: right; }
+    .metric-val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; line-height: 1.2; }
+    .metric-lbl { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Feed */
+    .feed-panel {
+      background: var(--bg-surface); backdrop-filter: blur(12px);
+      border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+    }
+    .feed-list { display: flex; flex-direction: column; gap: 1px; max-height: 600px; overflow-y: auto; margin-top: 10px; }
+    .feed-list::-webkit-scrollbar { width: 3px; }
+    .feed-list::-webkit-scrollbar-track { background: transparent; }
+    .feed-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
+    .feed-row {
+      display: grid; grid-template-columns: 8px 54px 1fr auto;
+      gap: 8px; align-items: center; padding: 6px 8px; border-radius: 4px; font-size: 14px;
+    }
+    .feed-row:nth-child(odd) { background: rgba(255,255,255,0.015); }
+    .f-dot { width: 6px; height: 6px; border-radius: 50%; justify-self: center; }
+    .f-dot.ok { background: var(--green); box-shadow: 0 0 4px var(--green-glow); }
+    .f-dot.fail { background: var(--red); box-shadow: 0 0 4px var(--red-glow); }
+    .f-dot.warn { background: var(--amber); }
+    .f-time { color: var(--text-muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+    .f-name { color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+    .f-result { font-size: 14px; font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
+    .f-result.ok { color: var(--text-muted); }
+    .f-result.fail { color: var(--red); }
+    .f-result.warn { color: var(--amber); }
+
+    .footer {
+      padding: 20px 0; border-top: 1px solid var(--border);
+      font-size: 14px; color: var(--text-muted);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .footer a { color: var(--cyan); text-decoration: none; transition: color 0.16s var(--ease); }
+    .footer a:hover { color: #67efff; }
+    .footer a:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(0,229,255,0.4); border-radius: 4px; }
+    .live-badge { display: flex; align-items: center; gap: 6px; }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); animation: pulse-pip 3s ease-in-out infinite; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .radar-sweep { animation: none; opacity: 0.2; }
+      .logo-pip, .live-dot { animation: none; }
+      *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-layers"></div>
+  <div class="noise"></div>
+  <div class="shell">
+    <div class="header">
+      <div class="logo"><div class="logo-pip"></div><span class="logo-text">Beacon</span></div>
+      <div class="nav-links">
+        <a href="/api/docs">API</a>
+        <a href="/api/health">Health</a>
+        <a href="/api/summary">JSON</a>
+      </div>
+    </div>
+    <div class="hero">
+      <div class="radar-wrap">
+        <div class="radar-ring"></div><div class="radar-ring inner"></div><div class="radar-ring core"></div>
+        <div class="radar-sweep"></div>
+        <div class="radar-score">
+          <div class="score-num" id="hero-trust">--</div>
+          <div class="score-label">Trust</div>
+        </div>
+      </div>
+      <div class="hero-info">
+        <div class="hero-desc">Trust layer for the <strong>x402 agent economy</strong> on Stellar. Agents query Beacon before spending money on API calls.</div>
+        <div class="hero-stats">
+          <div class="h-stat"><b id="stat-ep">-</b> endpoints</div>
+          <div class="h-stat"><b id="stat-probes">-</b> probes</div>
+          <div class="h-stat"><b id="stat-uptime">-</b>% uptime</div>
+        </div>
+      </div>
+    </div>
+    <div class="main-grid">
+      <div>
+        <div class="sec-head">
+          <span class="sec-title">Monitored Endpoints</span>
+          <span class="sec-count" id="ep-count"></span>
+        </div>
+        <div class="endpoints" id="endpoints"></div>
+      </div>
+      <div>
+        <div class="feed-panel">
+          <div class="sec-head">
+            <span class="sec-title">Probe Log</span>
+            <div class="live-badge"><div class="live-dot"></div><span style="font-size:14px;color:var(--text-muted);">5m cycle</span></div>
+          </div>
+          <div class="feed-list" id="feed"></div>
+        </div>
+      </div>
+    </div>
+    <div class="footer">
+      <span>Beacon v0.1 · Stellar Hacks 2026 · <a href="https://github.com/Yonkoo11/beacon">GitHub</a></span>
+      <span>$0.001 USDC via <a href="/api/docs">x402</a></span>
+    </div>
+  </div>
+  <script>
+    function scoreColor(s){if(s>=80)return'var(--green)';if(s>=50)return'var(--amber)';return'var(--red)';}
+    function fmtTime(ts){return new Date(ts).toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+    function shortUrl(url){try{const u=new URL(url);const p=u.pathname.replace(/^\//,'');return u.hostname.replace('www.','')+( p?'/'+p.split('?')[0]:'');}catch{return url;}}
+    function buildLed(history){const el=document.createElement('div');el.className='led-strip';const max=30;const bars=history.slice(-max);for(let i=bars.length;i<max;i++){const b=document.createElement('div');b.className='led empty';el.appendChild(b);}for(const p of bars){const b=document.createElement('div');b.className=p.success?'led ok':'led fail';el.appendChild(b);}return el;}
+    function buildEp(ep,idx){
+      const row=document.createElement('div');row.className='ep-row'+(idx<3&&ep.trust_score>=70?' top':'');row.tabIndex=0;
+      const dot=document.createElement('div');dot.className='s-dot '+ep.status;
+      const body=document.createElement('div');body.className='ep-body';
+      const top=document.createElement('div');top.className='ep-top-row';
+      const name=document.createElement('span');name.className='ep-name';name.textContent=ep.name;top.appendChild(name);
+      if(ep.x402_valid_rate>0||ep.x402_network){const tag=document.createElement('span');tag.className='tag-x402 '+(ep.x402_valid_rate>0?'active':'inactive');tag.textContent='X402';top.appendChild(tag);}
+      const url=document.createElement('div');url.className='ep-url';url.textContent=shortUrl(ep.url);
+      body.appendChild(top);body.appendChild(url);
+      if(ep.probe_history&&ep.probe_history.length>0)body.appendChild(buildLed(ep.probe_history));
+      const metrics=document.createElement('div');metrics.className='ep-metrics';
+      const tm=document.createElement('div');tm.className='metric';
+      const tv=document.createElement('div');tv.className='metric-val';tv.style.color=scoreColor(ep.trust_score);tv.textContent=ep.trust_score;
+      const tl=document.createElement('div');tl.className='metric-lbl';tl.textContent='TRUST';tm.appendChild(tv);tm.appendChild(tl);
+      const um=document.createElement('div');um.className='metric';
+      const uv=document.createElement('div');uv.className='metric-val';uv.style.color=scoreColor(ep.uptime_score);uv.style.fontSize='16px';uv.textContent=ep.uptime_score+'%';
+      const ul=document.createElement('div');ul.className='metric-lbl';ul.textContent='UPTIME';um.appendChild(uv);um.appendChild(ul);
+      metrics.appendChild(tm);metrics.appendChild(um);
+      row.appendChild(dot);row.appendChild(body);row.appendChild(metrics);return row;
+    }
+    function probeR(p){if(p.success)return{text:p.latency_ms+'ms',cls:'ok'};if(p.error&&p.error.includes('timeout'))return{text:'timeout',cls:'warn'};if(p.status_code>=500)return{text:p.status_code+'',cls:'fail'};return{text:'error',cls:'fail'};}
+    function buildFeed(p){
+      const row=document.createElement('div');row.className='feed-row';const r=probeR(p);
+      const dot=document.createElement('div');dot.className='f-dot '+(p.success?'ok':r.cls==='warn'?'warn':'fail');
+      const time=document.createElement('span');time.className='f-time';time.textContent=fmtTime(p.timestamp);
+      const name=document.createElement('span');name.className='f-name';name.textContent=shortUrl(p.url);
+      const result=document.createElement('span');result.className='f-result '+r.cls;result.textContent=r.text;
+      row.appendChild(dot);row.appendChild(time);row.appendChild(name);row.appendChild(result);return row;
+    }
+    async function refresh(){
+      try{
+        const data=await(await fetch('/api/summary')).json();
+        const avg=data.endpoints.length>0?Math.round(data.endpoints.reduce((a,e)=>a+e.trust_score,0)/data.endpoints.length):0;
+        const h=document.getElementById('hero-trust');h.textContent=avg;h.style.color=scoreColor(avg);
+        document.getElementById('stat-ep').textContent=data.stats.endpoints_tracked;
+        document.getElementById('stat-probes').textContent=data.stats.probes_today;
+        document.getElementById('stat-uptime').textContent=data.stats.avg_uptime;
+        document.getElementById('ep-count').textContent=data.endpoints.length+' tracked';
+        const list=document.getElementById('endpoints');list.replaceChildren();
+        data.endpoints.sort((a,b)=>b.trust_score-a.trust_score).forEach((ep,i)=>list.appendChild(buildEp(ep,i)));
+        const feed=document.getElementById('feed');feed.replaceChildren();
+        data.recent_probes.forEach(p=>feed.appendChild(buildFeed(p)));
+      }catch(e){console.error('Refresh:',e);}
+    }
+    refresh();setInterval(refresh,10000);
+  </script>
+</body>
+</html>

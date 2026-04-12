@@ -5,518 +5,593 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Beacon - x402 Trust Monitor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg-base: #07090f;
-      --bg-surface: #0d1017;
-      --bg-elevated: #131720;
-      --border: rgba(255,255,255,0.06);
-      --border-hover: rgba(99,102,241,0.2);
-      --text-primary: #e8eaf0;
-      --text-secondary: #8b8fa3;
-      --text-muted: #4b5060;
-      --accent: #6366f1;
-      --accent-glow: rgba(99,102,241,0.15);
-      --green: #22c55e;
-      --green-deep: rgba(34,197,94,0.1);
-      --green-glow: rgba(34,197,94,0.15);
-      --amber: #f59e0b;
-      --amber-deep: rgba(245,158,11,0.1);
-      --red: #ef4444;
-      --red-deep: rgba(239,68,68,0.1);
-      --red-glow: rgba(239,68,68,0.15);
+      --bg-base: #090b0e;
+      --bg-surface: #0f1114;
+      --bg-elevated: #151719;
+      --bg-hover: rgba(52,211,153,0.03);
+      --border: rgba(255,255,255,0.04);
+      --border-subtle: rgba(255,255,255,0.03);
+      --text-primary: #e6e9ed;
+      --text-secondary: #7c8491;
+      --text-muted: #3d4450;
+      --em: #34d399;
+      --em-bright: #6ee7b7;
+      --em-dim: #059669;
+      --em-glow: rgba(52,211,153,0.15);
+      --em-soft: rgba(52,211,153,0.06);
+      --amber: #fbbf24;
+      --amber-glow: rgba(251,191,36,0.12);
+      --red: #f87171;
+      --red-dim: #dc2626;
+      --red-glow: rgba(248,113,113,0.12);
+      --ease: cubic-bezier(0.23, 1, 0.32, 1);
+      --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     body {
-      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Inter', -apple-system, sans-serif;
       background: var(--bg-base);
       color: var(--text-primary);
       min-height: 100vh;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
     }
 
-    /* Background layers for depth */
-    .bg-layers {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
+    /* ============================================
+       AMBIENT BACKGROUND — responds to trust level
+       ============================================ */
+    .ambient { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+    .amb-layer {
+      position: absolute; top: -30%; left: 25%; width: 70%; height: 70%;
+      opacity: 0; transition: opacity 3s ease;
     }
-    .bg-layers::before {
-      content: '';
-      position: absolute;
-      top: -20%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 120%;
-      height: 60%;
-      background: radial-gradient(ellipse, rgba(99,102,241,0.06) 0%, transparent 70%);
+    .amb-green { background: radial-gradient(ellipse, rgba(52,211,153,0.08) 0%, transparent 55%); }
+    .amb-warn  { background: radial-gradient(ellipse, rgba(251,191,36,0.07) 0%, transparent 55%); }
+    .amb-danger { background: radial-gradient(ellipse, rgba(248,113,113,0.06) 0%, transparent 55%); }
+    .amb-floor {
+      position: absolute; bottom: 0; left: 0; width: 100%; height: 35%;
+      background: linear-gradient(to top, rgba(52,211,153,0.015) 0%, transparent 100%);
+      transition: background 3s ease;
     }
-    .bg-layers::after {
-      content: '';
-      position: absolute;
-      bottom: -10%;
-      right: -10%;
-      width: 60%;
-      height: 50%;
-      background: radial-gradient(ellipse, rgba(34,197,94,0.03) 0%, transparent 60%);
-    }
-    /* Noise texture */
     .noise {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      opacity: 0.035;
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      opacity: 0.035; mix-blend-mode: overlay;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      background-repeat: repeat;
-      background-size: 256px 256px;
+      background-repeat: repeat; background-size: 256px 256px;
     }
 
-    .container {
-      position: relative;
-      z-index: 1;
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 0 32px;
+    /* ============================================
+       SHELL
+       ============================================ */
+    .shell {
+      position: relative; z-index: 1;
+      max-width: 1000px; margin: 0 auto; padding: 0 32px;
     }
 
-    /* Header */
+    /* ============================================
+       HEADER
+       ============================================ */
     .header {
-      padding: 28px 0 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 32px 0 0;
+      display: flex; align-items: center; justify-content: space-between;
     }
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+    .logo { display: flex; align-items: center; gap: 8px; }
+    .logo-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--em);
+      box-shadow: 0 0 8px var(--em-glow);
+      animation: breathe 4s ease-in-out infinite;
     }
-    .logo-beacon {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 16px var(--accent-glow), 0 0 40px rgba(99,102,241,0.08);
-      animation: beacon-pulse 3s ease-in-out infinite;
+    @keyframes breathe {
+      0%, 100% { opacity: 0.5; transform: scale(1); box-shadow: 0 0 8px var(--em-glow); }
+      50% { opacity: 1; transform: scale(1.3); box-shadow: 0 0 18px rgba(52,211,153,0.25); }
     }
-    @keyframes beacon-pulse {
-      0%, 100% { box-shadow: 0 0 16px var(--accent-glow), 0 0 40px rgba(99,102,241,0.08); }
-      50% { box-shadow: 0 0 24px rgba(99,102,241,0.25), 0 0 60px rgba(99,102,241,0.12); }
+    .logo-name { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+    .nav { display: flex; gap: 4px; }
+    .nav a {
+      font-size: 14px; color: var(--text-muted); text-decoration: none;
+      padding: 6px 12px; border-radius: 6px;
+      transition: color 0.16s var(--ease), background 0.16s var(--ease);
     }
-    .logo-text {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
-    .nav-links {
-      display: flex;
-      gap: 20px;
-      font-size: 13px;
-    }
-    .nav-links a {
-      color: var(--text-muted);
-      text-decoration: none;
-      transition: color 0.15s;
-    }
-    .nav-links a:hover { color: var(--accent); }
+    .nav a:hover { color: var(--text-secondary); background: rgba(255,255,255,0.03); }
+    .nav a:active { transform: scale(0.97); }
+    .nav a:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(52,211,153,0.4); }
 
-    /* Hero trust score */
+    /* ============================================
+       HERO
+       ============================================ */
     .hero {
-      padding: 48px 0 40px;
-      display: flex;
-      align-items: flex-end;
-      gap: 48px;
+      padding: 64px 0 40px;
+      display: flex; align-items: center; gap: 48px;
     }
-    .hero-score {
-      position: relative;
+
+    /* Gauge */
+    .hero-gauge {
+      position: relative; width: 168px; height: 168px; flex-shrink: 0;
     }
-    .hero-score::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 180px;
-      height: 180px;
-      background: radial-gradient(circle, var(--hero-glow, var(--accent-glow)) 0%, transparent 70%);
+    .hero-gauge svg { width: 168px; height: 168px; }
+    .gauge-track { fill: none; stroke: rgba(255,255,255,0.03); stroke-width: 5; }
+    .gauge-value {
+      fill: none; stroke-width: 5; stroke-linecap: round;
+      transition: stroke-dashoffset 1.4s var(--ease), stroke 0.8s var(--ease);
+    }
+    /* Gauge glow ring behind the arc */
+    .gauge-glow {
+      fill: none; stroke-width: 14; stroke-linecap: round;
+      opacity: 0.08;
+      transition: stroke-dashoffset 1.4s var(--ease), stroke 0.8s var(--ease);
+      filter: blur(6px);
+    }
+    .hero-center {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .hero-num {
+      font-size: 54px; font-weight: 800; letter-spacing: -3px;
+      font-variant-numeric: tabular-nums; line-height: 1;
+      transition: color 0.8s var(--ease);
+    }
+    .hero-lbl {
+      font-size: 12px; font-weight: 500; text-transform: uppercase;
+      letter-spacing: 2px; color: var(--text-muted); margin-top: 4px;
+    }
+    /* Subtle pulse ring behind gauge on data refresh */
+    .gauge-ping {
+      position: absolute; inset: -8px; border-radius: 50%;
+      border: 1px solid var(--em);
+      opacity: 0; transform: scale(0.95);
       pointer-events: none;
     }
-    .score-number {
-      font-size: 80px;
-      font-weight: 700;
-      letter-spacing: -3px;
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
+    .gauge-ping.active {
+      animation: ping-out 1s var(--ease) forwards;
+    }
+    @keyframes ping-out {
+      0% { opacity: 0.3; transform: scale(0.95); }
+      100% { opacity: 0; transform: scale(1.15); }
+    }
+
+    .hero-text { padding-bottom: 4px; }
+    .hero-headline {
+      font-size: 19px; font-weight: 400; color: var(--text-secondary);
+      line-height: 1.55; max-width: 400px;
+    }
+    .hero-headline strong { color: var(--em); font-weight: 500; }
+    .hero-stats { display: flex; gap: 24px; margin-top: 14px; }
+    .hero-stat {
+      font-size: 14px; color: var(--text-muted); font-variant-numeric: tabular-nums;
+    }
+    .hero-stat b { color: var(--text-secondary); font-weight: 600; }
+
+    /* ============================================
+       PULSE LINE — heartbeat between sections
+       ============================================ */
+    .pulse-wrap {
+      width: 100%; height: 20px; overflow: hidden;
+      margin: 8px 0;
+    }
+    .pulse-svg { width: 200%; height: 20px; }
+    .pulse-path {
+      fill: none; stroke: var(--em); stroke-width: 1; opacity: 0.15;
+      animation: pulse-scroll 4s linear infinite;
+    }
+    @keyframes pulse-scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+    /* Flash brighter on data refresh */
+    .pulse-path.flash {
+      animation: pulse-scroll 4s linear infinite, pulse-flash 0.6s var(--ease);
+    }
+    @keyframes pulse-flash {
+      0% { opacity: 0.5; stroke-width: 2; }
+      100% { opacity: 0.15; stroke-width: 1; }
+    }
+
+    .divider { height: 1px; background: var(--border); }
+
+    /* ============================================
+       SECTION
+       ============================================ */
+    .section { padding: 32px 0; }
+    .sec-label {
+      font-size: 12px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 20px;
+    }
+
+    /* ============================================
+       FEATURED ENDPOINTS — top scorers, full detail
+       ============================================ */
+    .ep-featured { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+
+    .ep-feat {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+      transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), transform 0.08s var(--ease);
+      opacity: 0; transform: translateY(8px);
+      animation: slide-in 0.5s var(--ease) forwards;
+    }
+    .ep-feat:nth-child(1) { animation-delay: 0.05s; }
+    .ep-feat:nth-child(2) { animation-delay: 0.1s; }
+    .ep-feat:nth-child(3) { animation-delay: 0.15s; }
+
+    @keyframes slide-in {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .ep-feat:hover {
+      border-color: rgba(52,211,153,0.1);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.2), 0 0 40px var(--em-soft);
+      transform: translateY(-1px);
+    }
+    .ep-feat:active { transform: translateY(0) scale(0.998); }
+    .ep-feat:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(52,211,153,0.4); }
+
+    /* Best endpoint gets accent treatment */
+    .ep-feat.best {
+      border-color: rgba(52,211,153,0.08);
+      box-shadow: 0 0 48px rgba(52,211,153,0.03), 0 2px 16px rgba(0,0,0,0.15);
+      background: linear-gradient(135deg, var(--bg-surface) 0%, rgba(52,211,153,0.02) 100%);
+    }
+    .ep-feat.best::before {
+      content: ''; position: absolute; top: 0; left: 24px; right: 24px; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(52,211,153,0.15), transparent);
+    }
+
+    .ep-feat-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px; position: relative;
+    }
+    .ep-feat-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+    .s-pip {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
       position: relative;
     }
-    .score-label {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      margin-top: 8px;
+    .s-pip.up {
+      background: var(--em);
+      box-shadow: 0 0 6px var(--em-glow);
+      animation: breathe 4s ease-in-out infinite;
     }
-    .hero-meta {
-      padding-bottom: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .hero-desc {
-      font-size: 16px;
-      color: var(--text-secondary);
-      line-height: 1.5;
-      max-width: 480px;
-    }
-    .hero-desc strong { color: var(--accent); font-weight: 500; }
-    .hero-stats {
-      display: flex;
-      gap: 24px;
-      margin-top: 4px;
-    }
-    .hero-stat {
-      font-size: 14px;
-      color: var(--text-muted);
-      font-variant-numeric: tabular-nums;
-    }
-    .hero-stat b {
-      color: var(--text-secondary);
-      font-weight: 600;
-    }
-
-    /* Main grid */
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 24px;
-      padding-bottom: 40px;
-    }
-    @media (max-width: 960px) {
-      .main-grid { grid-template-columns: 1fr; }
-      .hero { flex-direction: column; align-items: flex-start; gap: 24px; }
-    }
-
-    /* Section headers */
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    .section-title {
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-    }
-    .section-count {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-variant-numeric: tabular-nums;
-    }
-
-    /* Endpoint cards */
-    .endpoints { display: flex; flex-direction: column; gap: 6px; }
-    .ep-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 18px;
-      display: grid;
-      grid-template-columns: 12px 1fr auto;
-      gap: 14px;
-      align-items: center;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .ep-card:hover {
-      border-color: var(--border-hover);
-      box-shadow: 0 0 20px rgba(99,102,241,0.04);
-    }
-    .ep-card.primary {
-      background: var(--bg-elevated);
-      border-color: rgba(99,102,241,0.1);
-      box-shadow: 0 0 30px rgba(99,102,241,0.03);
-    }
-
-    /* Status indicator */
-    .status-pip {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .status-pip.up {
-      background: var(--green);
-      box-shadow: 0 0 8px var(--green-glow), 0 0 20px rgba(34,197,94,0.08);
-    }
-    .status-pip.down {
+    .s-pip.up:nth-child(1) { animation-delay: 0s; }
+    .s-pip.down {
       background: var(--red);
-      box-shadow: 0 0 8px var(--red-glow), 0 0 20px rgba(239,68,68,0.08);
+      box-shadow: 0 0 6px var(--red-glow);
+      animation: breathe-red 2s ease-in-out infinite;
     }
-    .status-pip.unknown {
-      background: var(--amber);
-      box-shadow: 0 0 8px rgba(245,158,11,0.2);
+    @keyframes breathe-red {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; box-shadow: 0 0 12px rgba(248,113,113,0.3); }
+    }
+    .s-pip.unknown { background: var(--amber); box-shadow: 0 0 4px var(--amber-glow); }
+
+    .ep-feat-name { font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }
+    .tag-x {
+      font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+      padding: 1px 7px; border-radius: 4px; text-transform: uppercase;
+      background: rgba(52,211,153,0.08); color: var(--em-bright);
+      border: 1px solid rgba(52,211,153,0.1);
+    }
+    .ep-feat-score {
+      font-size: 36px; font-weight: 800; letter-spacing: -2px;
+      font-variant-numeric: tabular-nums; line-height: 1;
+      transition: color 0.4s var(--ease);
     }
 
-    /* Endpoint info */
-    .ep-body { min-width: 0; }
-    .ep-top {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 2px;
-    }
-    .ep-name {
-      font-size: 14px;
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .tag {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      flex-shrink: 0;
-    }
-    .tag-x402 {
-      background: rgba(99,102,241,0.12);
-      color: #a5b4fc;
-      border: 1px solid rgba(99,102,241,0.12);
-    }
-    .tag-x402.active {
-      background: rgba(34,197,94,0.1);
-      color: #86efac;
-      border-color: rgba(34,197,94,0.12);
-    }
-    .ep-url {
-      font-size: 13px;
-      color: var(--text-muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .ep-feat-url {
       font-family: 'JetBrains Mono', monospace;
+      font-size: 14px; color: var(--text-muted); margin-bottom: 14px;
     }
 
-    /* Sparkline bar (probe history) */
-    .sparkline {
-      display: flex;
-      gap: 1.5px;
-      align-items: flex-end;
-      height: 18px;
-      margin-top: 6px;
+    .ep-feat-bottom { display: flex; align-items: flex-end; gap: 20px; }
+    .ep-feat-bars {
+      flex: 1; display: flex; gap: 2px; align-items: flex-end; height: 32px;
     }
-    .spark-bar {
-      flex: 1;
-      min-width: 3px;
-      max-width: 8px;
-      border-radius: 1px;
-      transition: opacity 0.15s;
+    .bar {
+      flex: 1; min-width: 3px; max-width: 10px; border-radius: 1.5px;
+      transition: opacity 0.16s var(--ease), height 0.3s var(--ease);
+      transform-origin: bottom;
     }
-    .spark-bar.ok { background: var(--green); opacity: 0.7; }
-    .spark-bar.ok:hover { opacity: 1; }
-    .spark-bar.fail { background: var(--red); opacity: 0.8; }
-    .spark-bar.fail:hover { opacity: 1; }
-    .spark-bar.empty { background: rgba(255,255,255,0.04); }
-
-    /* Endpoint metrics */
-    .ep-metrics {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      flex-shrink: 0;
-    }
-    .metric { text-align: right; }
-    .metric-val {
-      font-size: 20px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: -0.5px;
-      line-height: 1.2;
-    }
-    .metric-lbl {
-      font-size: 11px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    .bar.ok { background: var(--em); opacity: 0.3; }
+    .bar.ok:hover { opacity: 0.85; }
+    .bar.fail { background: var(--red); opacity: 0.55; }
+    .bar.fail:hover { opacity: 1; }
+    .bar.empty { background: rgba(255,255,255,0.025); }
+    .ep-feat-uptime {
+      font-size: 14px; font-weight: 500; color: var(--text-secondary);
+      font-variant-numeric: tabular-nums; flex-shrink: 0; white-space: nowrap;
     }
 
-    /* Probe feed */
-    .feed-panel {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
+    /* ============================================
+       COMPACT ENDPOINTS — remaining, minimal rows
+       ============================================ */
+    .ep-compact { display: flex; flex-direction: column; }
+    .ep-comp {
+      display: grid;
+      grid-template-columns: 6px 1fr 140px 56px 56px;
+      gap: 12px; align-items: center;
+      padding: 14px 4px;
+      border-bottom: 1px solid var(--border-subtle);
+      transition: background 0.18s var(--ease), transform 0.08s var(--ease);
+      opacity: 0; animation: fade-in 0.4s var(--ease) forwards;
     }
-    .feed-list {
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-      max-height: 580px;
-      overflow-y: auto;
-      margin-top: 8px;
+    .ep-comp:first-child { border-top: 1px solid var(--border-subtle); }
+    .ep-comp:nth-child(1) { animation-delay: 0.2s; }
+    .ep-comp:nth-child(2) { animation-delay: 0.25s; }
+    .ep-comp:nth-child(3) { animation-delay: 0.3s; }
+    .ep-comp:nth-child(4) { animation-delay: 0.35s; }
+    .ep-comp:nth-child(5) { animation-delay: 0.4s; }
+
+    @keyframes fade-in { to { opacity: 1; } }
+
+    .ep-comp:hover { background: var(--bg-hover); }
+    .ep-comp:active { transform: scale(0.999); }
+    .ep-comp:focus-visible { outline: none; box-shadow: inset 0 0 0 2px rgba(52,211,153,0.3); border-radius: 4px; }
+
+    .c-dot { width: 5px; height: 5px; border-radius: 50%; justify-self: center; }
+    .c-dot.up { background: var(--em); box-shadow: 0 0 4px var(--em-glow); }
+    .c-dot.down { background: var(--red); box-shadow: 0 0 4px var(--red-glow); }
+    .c-dot.unknown { background: var(--amber); }
+
+    .c-info { min-width: 0; }
+    .c-name { font-size: 14px; font-weight: 500; }
+    .c-url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; color: var(--text-muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .feed-list::-webkit-scrollbar { width: 3px; }
-    .feed-list::-webkit-scrollbar-track { background: transparent; }
-    .feed-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
+    .c-bars {
+      display: flex; gap: 1.5px; align-items: flex-end; height: 16px;
+      justify-content: flex-end;
+    }
+    .c-bar { width: 3px; border-radius: 1px; }
+    .c-bar.ok { background: var(--em); opacity: 0.25; }
+    .c-bar.fail { background: var(--red); opacity: 0.45; }
+    .c-bar.empty { background: rgba(255,255,255,0.025); }
+    .c-trust {
+      font-size: 18px; font-weight: 700; text-align: right;
+      font-variant-numeric: tabular-nums; letter-spacing: -0.5px;
+      transition: color 0.4s var(--ease);
+    }
+    .c-uptime {
+      font-size: 14px; font-weight: 400; text-align: right;
+      font-variant-numeric: tabular-nums; color: var(--text-secondary);
+    }
+
+    /* ============================================
+       VALUE CHANGE ANIMATION
+       ============================================ */
+    .val-flash {
+      animation: v-flash 0.6s var(--ease);
+    }
+    @keyframes v-flash {
+      0% { filter: brightness(1.6); }
+      100% { filter: brightness(1); }
+    }
+
+    /* ============================================
+       FEED — two-column probe log
+       ============================================ */
+    .feed-section { padding: 24px 0 48px; }
+    .feed-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .live-pip {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 14px; color: var(--text-muted);
+    }
+    .live-pip-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: var(--em);
+      animation: breathe 4s ease-in-out infinite;
+    }
+    .feed-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px;
+    }
+    @media (max-width: 680px) { .feed-grid { grid-template-columns: 1fr; } }
 
     .feed-row {
-      display: grid;
-      grid-template-columns: 14px 52px 1fr auto;
-      gap: 8px;
-      align-items: center;
-      padding: 4px 6px;
-      border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
+      display: grid; grid-template-columns: 5px 48px 1fr auto;
+      gap: 8px; align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.02);
+      font-family: 'JetBrains Mono', monospace; font-size: 14px;
+      opacity: 0; animation: fade-in 0.3s var(--ease) forwards;
     }
-    .feed-row:nth-child(odd) { background: rgba(255,255,255,0.015); }
-    .feed-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      justify-self: center;
-    }
-    .feed-dot.ok { background: var(--green); box-shadow: 0 0 4px var(--green-glow); }
-    .feed-dot.fail { background: var(--red); box-shadow: 0 0 4px var(--red-glow); }
-    .feed-dot.warn { background: var(--amber); }
-    .feed-time {
-      color: var(--text-muted);
-      font-size: 12px;
-    }
-    .feed-name {
-      color: var(--text-secondary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .feed-result {
-      font-size: 12px;
-      font-weight: 500;
-      text-align: right;
-    }
-    .feed-result.ok { color: var(--text-muted); }
-    .feed-result.fail { color: var(--red); }
-    .feed-result.warn { color: var(--amber); }
+    /* Stagger feed rows */
+    .feed-row:nth-child(1) { animation-delay: 0.02s; }
+    .feed-row:nth-child(2) { animation-delay: 0.04s; }
+    .feed-row:nth-child(3) { animation-delay: 0.06s; }
+    .feed-row:nth-child(4) { animation-delay: 0.08s; }
+    .feed-row:nth-child(5) { animation-delay: 0.1s; }
+    .feed-row:nth-child(6) { animation-delay: 0.12s; }
+    .feed-row:nth-child(7) { animation-delay: 0.14s; }
+    .feed-row:nth-child(8) { animation-delay: 0.16s; }
+    .feed-row:nth-child(n+9) { animation-delay: 0.18s; }
 
-    /* Footer */
+    .fd { width: 4px; height: 4px; border-radius: 50%; justify-self: center; }
+    .fd.ok { background: var(--em); }
+    .fd.fail { background: var(--red); }
+    .fd.warn { background: var(--amber); }
+    .ft { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .fn {
+      color: var(--text-secondary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .fr { font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; }
+    .fr.ok { color: var(--text-muted); }
+    .fr.fail { color: var(--red); }
+    .fr.warn { color: var(--amber); }
+
+    /* ============================================
+       SKELETON LOADING STATE
+       ============================================ */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-elevated) 50%, var(--bg-surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skel-card {
+      height: 120px; border-radius: 14px; margin-bottom: 12px;
+    }
+    .skel-row {
+      height: 48px; margin-bottom: 4px;
+    }
+
+    /* ============================================
+       FOOTER
+       ============================================ */
     .footer {
-      padding: 20px 0;
-      border-top: 1px solid var(--border);
-      font-size: 12px;
-      color: var(--text-muted);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      padding: 20px 0; border-top: 1px solid var(--border);
+      font-size: 14px; color: var(--text-muted);
+      display: flex; justify-content: space-between; align-items: center;
     }
-    .footer a { color: var(--accent); text-decoration: none; }
-    .footer a:hover { color: #818cf8; }
-    .live-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .footer a {
+      color: var(--em-dim); text-decoration: none;
+      transition: color 0.16s var(--ease);
     }
-    .live-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--green);
-      animation: beacon-pulse 3s ease-in-out infinite;
+    .footer a:hover { color: var(--em); }
+    .footer a:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(52,211,153,0.4); border-radius: 4px; }
+
+    /* ============================================
+       RESPONSIVE
+       ============================================ */
+    @media (max-width: 768px) {
+      .hero { flex-direction: column; align-items: flex-start; gap: 24px; padding: 40px 0 28px; }
+      .hero-gauge { width: 120px; height: 120px; }
+      .hero-gauge svg { width: 120px; height: 120px; }
+      .hero-num { font-size: 40px; }
+      .ep-comp { grid-template-columns: 6px 1fr 56px 56px; }
+      .c-bars { display: none; }
+      .ep-feat-score { font-size: 28px; }
+    }
+
+    /* ============================================
+       REDUCED MOTION
+       ============================================ */
+    @media (prefers-reduced-motion: reduce) {
+      .logo-dot, .live-pip-dot, .s-pip.up, .s-pip.down { animation: none; opacity: 1; }
+      .pulse-path { animation: none; opacity: 0.1; }
+      .ep-feat, .ep-comp, .feed-row { animation: none; opacity: 1; }
+      .gauge-ping.active { animation: none; }
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="bg-layers"></div>
+  <!-- Ambient background layers — shift color based on trust health -->
+  <div class="ambient">
+    <div class="amb-layer amb-green" id="amb-g"></div>
+    <div class="amb-layer amb-warn" id="amb-w"></div>
+    <div class="amb-layer amb-danger" id="amb-d"></div>
+    <div class="amb-floor" id="amb-f"></div>
+  </div>
   <div class="noise"></div>
 
-  <div class="container">
-    <div class="header">
-      <div class="logo">
-        <div class="logo-beacon"></div>
-        <span class="logo-text">Beacon</span>
-      </div>
-      <div class="nav-links">
-        <a href="/api/docs">API Docs</a>
+  <div class="shell">
+    <header class="header">
+      <div class="logo"><div class="logo-dot"></div><span class="logo-name">Beacon</span></div>
+      <nav class="nav">
+        <a href="/api/docs">API</a>
         <a href="/api/health">Health</a>
         <a href="/api/summary">JSON</a>
-      </div>
-    </div>
+      </nav>
+    </header>
 
-    <div class="hero">
-      <div class="hero-score">
-        <div class="score-number" id="hero-trust">--</div>
-        <div class="score-label">Avg Trust Score</div>
+    <section class="hero">
+      <div class="hero-gauge">
+        <svg viewBox="0 0 168 168">
+          <circle class="gauge-track" cx="84" cy="84" r="74" />
+          <circle class="gauge-glow" id="gauge-glow" cx="84" cy="84" r="74"
+            stroke-dasharray="465" stroke-dashoffset="465"
+            transform="rotate(-90 84 84)" stroke="var(--em)" />
+          <circle class="gauge-value" id="gauge-arc" cx="84" cy="84" r="74"
+            stroke-dasharray="465" stroke-dashoffset="465"
+            transform="rotate(-90 84 84)" stroke="var(--em)" />
+        </svg>
+        <div class="gauge-ping" id="gauge-ping"></div>
+        <div class="hero-center">
+          <div class="hero-num" id="hero-trust">--</div>
+          <div class="hero-lbl">Trust</div>
+        </div>
       </div>
-      <div class="hero-meta">
-        <div class="hero-desc">
+      <div class="hero-text">
+        <p class="hero-headline">
           Trust layer for the <strong>x402 agent economy</strong> on Stellar.
           Agents check Beacon before spending money on API calls.
-        </div>
+        </p>
         <div class="hero-stats">
-          <div class="hero-stat"><b id="stat-endpoints">-</b> endpoints</div>
-          <div class="hero-stat"><b id="stat-probes">-</b> probes today</div>
-          <div class="hero-stat"><b id="stat-uptime">-</b>% avg uptime</div>
+          <span class="hero-stat"><b id="s-ep">-</b> endpoints</span>
+          <span class="hero-stat"><b id="s-pr">-</b> probes</span>
+          <span class="hero-stat"><b id="s-up">-</b>% uptime</span>
         </div>
       </div>
+    </section>
+
+    <!-- Heartbeat pulse line -->
+    <div class="pulse-wrap">
+      <svg class="pulse-svg" viewBox="0 0 2000 20" preserveAspectRatio="none">
+        <path id="pulse-path" class="pulse-path" d="M0,10 L120,10 L135,3 L150,17 L160,6 L170,14 L180,10 L1000,10 L1015,3 L1030,17 L1040,6 L1050,14 L1060,10 L2000,10" />
+      </svg>
     </div>
 
-    <div class="main-grid">
-      <div>
-        <div class="section-header">
-          <span class="section-title">Monitored Endpoints</span>
-          <span class="section-count" id="ep-count"></span>
-        </div>
-        <div class="endpoints" id="endpoints"></div>
-      </div>
-      <div>
-        <div class="feed-panel">
-          <div class="section-header">
-            <span class="section-title">Live Probes</span>
-            <div class="live-badge">
-              <div class="live-dot"></div>
-              <span style="font-size:12px;color:var(--text-muted);">every 5m</span>
-            </div>
-          </div>
-          <div class="feed-list" id="feed"></div>
-        </div>
-      </div>
-    </div>
+    <div class="divider"></div>
 
-    <div class="footer">
-      <span>Beacon v0.1 &middot; Stellar Hacks 2026 &middot; <a href="https://github.com/Yonkoo11/beacon">GitHub</a></span>
-      <span>Paid queries: $0.001 USDC via <a href="/api/docs">x402</a> on Stellar</span>
-    </div>
+    <section class="section">
+      <div class="sec-label">Endpoints</div>
+      <!-- Skeleton shown before first data load -->
+      <div id="skel-ep">
+        <div class="skeleton skel-card"></div>
+        <div class="skeleton skel-card"></div>
+        <div class="skeleton skel-row"></div>
+        <div class="skeleton skel-row"></div>
+      </div>
+      <div class="ep-featured" id="ep-feat" style="display:none"></div>
+      <div class="ep-compact" id="ep-comp" style="display:none"></div>
+    </section>
+
+    <div class="divider"></div>
+
+    <section class="feed-section">
+      <div class="feed-head">
+        <span class="sec-label" style="margin-bottom:0">Recent Probes</span>
+        <div class="live-pip"><div class="live-pip-dot"></div> every 5m</div>
+      </div>
+      <div class="feed-grid" id="feed"></div>
+    </section>
+
+    <footer class="footer">
+      <span>Beacon · Stellar Hacks 2026 · <a href="https://github.com/Yonkoo11/beacon">GitHub</a></span>
+      <span>$0.001 USDC via <a href="/api/docs">x402</a></span>
+    </footer>
   </div>
 
   <script>
-    function colorForScore(s) {
-      if (s >= 80) return 'var(--green)';
-      if (s >= 50) return 'var(--amber)';
-      return 'var(--red)';
-    }
+    const CIRC = 465;
+    let prevTrust = null;
+    let firstLoad = true;
 
-    function timeAgo(ts) {
-      const d = Date.now() - ts;
-      if (d < 60000) return Math.round(d / 1000) + 's';
-      if (d < 3600000) return Math.round(d / 60000) + 'm';
-      return Math.round(d / 3600000) + 'h';
-    }
-
+    function sColor(s) { return s >= 80 ? 'var(--em)' : s >= 50 ? 'var(--amber)' : 'var(--red)'; }
+    function sHex(s) { return s >= 80 ? '#34d399' : s >= 50 ? '#fbbf24' : '#f87171'; }
     function fmtTime(ts) {
       return new Date(ts).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
-
     function shortUrl(url) {
       try {
         const u = new URL(url);
@@ -525,192 +600,212 @@
       } catch { return url; }
     }
 
-    function buildSparkline(history) {
+    // Ambient background responds to overall trust
+    function setAmbient(trust) {
+      const g = document.getElementById('amb-g');
+      const w = document.getElementById('amb-w');
+      const d = document.getElementById('amb-d');
+      const f = document.getElementById('amb-f');
+      if (trust >= 65) {
+        g.style.opacity = 1; w.style.opacity = 0; d.style.opacity = 0;
+        f.style.background = 'linear-gradient(to top, rgba(52,211,153,0.015) 0%, transparent 100%)';
+      } else if (trust >= 35) {
+        g.style.opacity = 0; w.style.opacity = 1; d.style.opacity = 0;
+        f.style.background = 'linear-gradient(to top, rgba(251,191,36,0.01) 0%, transparent 100%)';
+      } else {
+        g.style.opacity = 0; w.style.opacity = 0; d.style.opacity = 1;
+        f.style.background = 'linear-gradient(to top, rgba(248,113,113,0.01) 0%, transparent 100%)';
+      }
+    }
+
+    // Ping the gauge ring on data refresh
+    function pingGauge() {
+      const el = document.getElementById('gauge-ping');
+      el.classList.remove('active');
+      void el.offsetWidth; // force reflow
+      el.classList.add('active');
+    }
+
+    // Flash the pulse line on data refresh
+    function flashPulse() {
+      const el = document.getElementById('pulse-path');
+      el.classList.remove('flash');
+      void el.offsetWidth;
+      el.classList.add('flash');
+    }
+
+    function buildBars(history, h, max, cls) {
       const el = document.createElement('div');
-      el.className = 'sparkline';
-      const maxBars = 30;
-      const bars = history.slice(-maxBars);
-      // Pad with empty bars if fewer
-      for (let i = bars.length; i < maxBars; i++) {
+      el.className = cls === 'big' ? 'ep-feat-bars' : 'c-bars';
+      if (cls === 'big') el.style.height = h + 'px';
+      const bars = history.slice(-max);
+      // Pad with empties
+      for (let i = bars.length; i < max; i++) {
         const b = document.createElement('div');
-        b.className = 'spark-bar empty';
-        b.style.height = '4px';
+        b.className = (cls === 'big' ? 'bar' : 'c-bar') + ' empty';
+        b.style.height = '3px';
         el.appendChild(b);
       }
-      for (const probe of bars) {
+      for (let j = 0; j < bars.length; j++) {
+        const p = bars[j];
         const b = document.createElement('div');
-        if (probe.success) {
-          // Height from latency (lower = taller, capped)
-          const h = Math.max(4, Math.min(18, 18 - (probe.latency_ms / 2000) * 14));
-          b.className = 'spark-bar ok';
-          b.style.height = h + 'px';
+        const c = cls === 'big' ? 'bar' : 'c-bar';
+        if (p.success) {
+          const ht = Math.max(3, Math.min(h, h - (p.latency_ms / 3000) * (h - 3)));
+          b.className = c + ' ok';
+          b.style.height = ht + 'px';
         } else {
-          b.className = 'spark-bar fail';
-          b.style.height = '18px';
+          b.className = c + ' fail';
+          b.style.height = h + 'px';
+        }
+        // Stagger bar entrance
+        if (firstLoad) {
+          b.style.opacity = '0';
+          b.style.animation = `fade-in 0.3s var(--ease) ${0.3 + j * 0.01}s forwards`;
         }
         el.appendChild(b);
       }
       return el;
     }
 
-    function buildEndpointCard(ep, idx) {
+    function buildFeatured(ep, isTop) {
       const card = document.createElement('div');
-      card.className = 'ep-card' + (idx < 3 && ep.trust_score >= 70 ? ' primary' : '');
+      card.className = 'ep-feat' + (isTop ? ' best' : '');
+      card.tabIndex = 0;
+      card.style.position = 'relative';
 
-      // Status pip
-      const pip = document.createElement('div');
-      pip.className = 'status-pip ' + ep.status;
-
-      // Body
-      const body = document.createElement('div');
-      body.className = 'ep-body';
-
-      const top = document.createElement('div');
-      top.className = 'ep-top';
-      const name = document.createElement('span');
-      name.className = 'ep-name';
-      name.textContent = ep.name;
-      top.appendChild(name);
-
+      const top = document.createElement('div'); top.className = 'ep-feat-top';
+      const left = document.createElement('div'); left.className = 'ep-feat-left';
+      const pip = document.createElement('div'); pip.className = 's-pip ' + ep.status;
+      const name = document.createElement('span'); name.className = 'ep-feat-name'; name.textContent = ep.name;
+      left.appendChild(pip); left.appendChild(name);
       if (ep.x402_valid_rate > 0) {
-        const tag = document.createElement('span');
-        tag.className = 'tag tag-x402 active';
-        tag.textContent = 'x402';
-        top.appendChild(tag);
-      } else if (ep.x402_network) {
-        const tag = document.createElement('span');
-        tag.className = 'tag tag-x402';
-        tag.textContent = 'x402';
-        top.appendChild(tag);
+        const tag = document.createElement('span'); tag.className = 'tag-x'; tag.textContent = 'X402';
+        left.appendChild(tag);
       }
+      const score = document.createElement('div'); score.className = 'ep-feat-score';
+      score.style.color = sColor(ep.trust_score); score.textContent = ep.trust_score;
+      top.appendChild(left); top.appendChild(score);
 
-      const url = document.createElement('div');
-      url.className = 'ep-url';
+      const url = document.createElement('div'); url.className = 'ep-feat-url';
       url.textContent = shortUrl(ep.url);
 
-      body.appendChild(top);
-      body.appendChild(url);
-
-      // Sparkline
+      const bottom = document.createElement('div'); bottom.className = 'ep-feat-bottom';
       if (ep.probe_history && ep.probe_history.length > 0) {
-        body.appendChild(buildSparkline(ep.probe_history));
+        bottom.appendChild(buildBars(ep.probe_history, 32, 36, 'big'));
       }
+      const uptime = document.createElement('div'); uptime.className = 'ep-feat-uptime';
+      uptime.textContent = ep.uptime_score + '% uptime';
+      bottom.appendChild(uptime);
 
-      // Metrics
-      const metrics = document.createElement('div');
-      metrics.className = 'ep-metrics';
-
-      // Trust
-      const tm = document.createElement('div');
-      tm.className = 'metric';
-      const tv = document.createElement('div');
-      tv.className = 'metric-val';
-      tv.style.color = colorForScore(ep.trust_score);
-      tv.textContent = ep.trust_score;
-      const tl = document.createElement('div');
-      tl.className = 'metric-lbl';
-      tl.textContent = 'Trust';
-      tm.appendChild(tv);
-      tm.appendChild(tl);
-
-      // Uptime
-      const um = document.createElement('div');
-      um.className = 'metric';
-      const uv = document.createElement('div');
-      uv.className = 'metric-val';
-      uv.style.color = colorForScore(ep.uptime_score);
-      uv.style.fontSize = '16px';
-      uv.textContent = ep.uptime_score + '%';
-      const ul = document.createElement('div');
-      ul.className = 'metric-lbl';
-      ul.textContent = 'Uptime';
-      um.appendChild(uv);
-      um.appendChild(ul);
-
-      metrics.appendChild(tm);
-      metrics.appendChild(um);
-
-      card.appendChild(pip);
-      card.appendChild(body);
-      card.appendChild(metrics);
+      card.appendChild(top); card.appendChild(url); card.appendChild(bottom);
       return card;
     }
 
-    function probeResult(p) {
+    function buildCompact(ep) {
+      const row = document.createElement('div'); row.className = 'ep-comp'; row.tabIndex = 0;
+      const dot = document.createElement('div'); dot.className = 'c-dot ' + ep.status;
+      const info = document.createElement('div'); info.className = 'c-info';
+      const name = document.createElement('div'); name.className = 'c-name'; name.textContent = ep.name;
+      const url = document.createElement('div'); url.className = 'c-url'; url.textContent = shortUrl(ep.url);
+      info.appendChild(name); info.appendChild(url);
+
+      const bars = (ep.probe_history && ep.probe_history.length > 0)
+        ? buildBars(ep.probe_history, 16, 20, 'small')
+        : document.createElement('div');
+
+      const trust = document.createElement('div'); trust.className = 'c-trust';
+      trust.style.color = sColor(ep.trust_score); trust.textContent = ep.trust_score;
+      const uptime = document.createElement('div'); uptime.className = 'c-uptime';
+      uptime.textContent = ep.uptime_score + '%';
+
+      row.appendChild(dot); row.appendChild(info); row.appendChild(bars);
+      row.appendChild(trust); row.appendChild(uptime);
+      return row;
+    }
+
+    function probeR(p) {
       if (p.success) return { text: p.latency_ms + 'ms', cls: 'ok' };
       if (p.error && p.error.includes('timeout')) return { text: 'timeout', cls: 'warn' };
       if (p.status_code >= 500) return { text: p.status_code + '', cls: 'fail' };
-      if (p.error) return { text: 'error', cls: 'fail' };
-      return { text: p.latency_ms + 'ms', cls: 'ok' };
+      return { text: 'error', cls: 'fail' };
     }
 
-    function buildFeedRow(p) {
-      const row = document.createElement('div');
-      row.className = 'feed-row';
-      const r = probeResult(p);
-
+    function buildFeed(p, i) {
+      const row = document.createElement('div'); row.className = 'feed-row';
+      row.style.animationDelay = (0.02 * Math.min(i, 12)) + 's';
+      const r = probeR(p);
       const dot = document.createElement('div');
-      dot.className = 'feed-dot ' + (p.success ? 'ok' : r.cls === 'warn' ? 'warn' : 'fail');
-
-      const time = document.createElement('span');
-      time.className = 'feed-time';
-      time.textContent = fmtTime(p.timestamp);
-
-      const name = document.createElement('span');
-      name.className = 'feed-name';
-      name.textContent = shortUrl(p.url);
-
-      const result = document.createElement('span');
-      result.className = 'feed-result ' + r.cls;
-      result.textContent = r.text;
-
-      row.appendChild(dot);
-      row.appendChild(time);
-      row.appendChild(name);
-      row.appendChild(result);
+      dot.className = 'fd ' + (p.success ? 'ok' : r.cls === 'warn' ? 'warn' : 'fail');
+      const time = document.createElement('span'); time.className = 'ft'; time.textContent = fmtTime(p.timestamp);
+      const name = document.createElement('span'); name.className = 'fn'; name.textContent = shortUrl(p.url);
+      const result = document.createElement('span'); result.className = 'fr ' + r.cls; result.textContent = r.text;
+      row.appendChild(dot); row.appendChild(time); row.appendChild(name); row.appendChild(result);
       return row;
     }
 
     async function refresh() {
       try {
         const data = await (await fetch('/api/summary')).json();
+        const eps = data.endpoints.sort((a, b) => b.trust_score - a.trust_score);
+        const avg = eps.length > 0
+          ? Math.round(eps.reduce((a, e) => a + e.trust_score, 0) / eps.length) : 0;
 
-        // Hero score
-        const avgTrust = data.endpoints.length > 0
-          ? Math.round(data.endpoints.reduce((a, e) => a + e.trust_score, 0) / data.endpoints.length)
-          : 0;
+        // Hero gauge
         const heroEl = document.getElementById('hero-trust');
-        heroEl.textContent = avgTrust;
-        heroEl.style.color = colorForScore(avgTrust);
-        // Match glow to score color
-        const heroScore = document.querySelector('.hero-score');
-        if (avgTrust >= 80) {
-          heroScore.style.setProperty('--hero-glow', 'rgba(34,197,94,0.12)');
-        } else if (avgTrust >= 50) {
-          heroScore.style.setProperty('--hero-glow', 'rgba(245,158,11,0.12)');
-        } else {
-          heroScore.style.setProperty('--hero-glow', 'rgba(239,68,68,0.1)');
+        heroEl.textContent = avg;
+        heroEl.style.color = sColor(avg);
+        const offset = CIRC - (CIRC * (avg / 100));
+        const hex = sHex(avg);
+        document.getElementById('gauge-arc').style.strokeDashoffset = offset;
+        document.getElementById('gauge-arc').style.stroke = hex;
+        document.getElementById('gauge-glow').style.strokeDashoffset = offset;
+        document.getElementById('gauge-glow').style.stroke = hex;
+
+        // Flash effects on data change
+        if (prevTrust !== null && prevTrust !== avg) {
+          heroEl.classList.add('val-flash');
+          setTimeout(() => heroEl.classList.remove('val-flash'), 600);
         }
+        if (!firstLoad) { pingGauge(); flashPulse(); }
+        prevTrust = avg;
 
-        document.getElementById('stat-endpoints').textContent = data.stats.endpoints_tracked;
-        document.getElementById('stat-probes').textContent = data.stats.probes_today;
-        document.getElementById('stat-uptime').textContent = data.stats.avg_uptime;
-        document.getElementById('ep-count').textContent = data.endpoints.length + ' tracked';
+        setAmbient(avg);
 
-        // Endpoints
-        const list = document.getElementById('endpoints');
-        list.replaceChildren();
-        data.endpoints
-          .sort((a, b) => b.trust_score - a.trust_score)
-          .forEach((ep, i) => list.appendChild(buildEndpointCard(ep, i)));
+        // Stats
+        document.getElementById('s-ep').textContent = data.stats.endpoints_tracked;
+        document.getElementById('s-pr').textContent = data.stats.probes_today;
+        document.getElementById('s-up').textContent = data.stats.avg_uptime;
+
+        // Hide skeleton, show data
+        const skelEl = document.getElementById('skel-ep');
+        if (skelEl) skelEl.style.display = 'none';
+        document.getElementById('ep-feat').style.display = '';
+        document.getElementById('ep-comp').style.display = '';
+
+        // Split: top active endpoints get featured, rest compact
+        const feat = document.getElementById('ep-feat');
+        const comp = document.getElementById('ep-comp');
+        feat.replaceChildren(); comp.replaceChildren();
+
+        const activeCount = eps.filter(e => e.trust_score > 0).length;
+        const splitAt = Math.min(3, activeCount);
+
+        eps.forEach((ep, i) => {
+          if (i < splitAt) {
+            feat.appendChild(buildFeatured(ep, i === 0));
+          } else {
+            comp.appendChild(buildCompact(ep));
+          }
+        });
 
         // Feed
         const feed = document.getElementById('feed');
         feed.replaceChildren();
-        data.recent_probes.forEach(p => feed.appendChild(buildFeedRow(p)));
-      } catch (err) {
-        console.error('Refresh failed:', err);
-      }
+        data.recent_probes.forEach((p, i) => feed.appendChild(buildFeed(p, i)));
+
+        firstLoad = false;
+      } catch (e) { console.error('Refresh:', e); }
     }
 
     refresh();
