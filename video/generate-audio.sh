@@ -5,7 +5,6 @@ set -e
 SCRIPT_DIR="${0:A:h}"
 AUDIO_DIR="$SCRIPT_DIR/audio"
 mkdir -p "$AUDIO_DIR"
-rm -f "$AUDIO_DIR"/*.mp3
 
 VOICE_ID="nPczCjzI2devNBz1zQrb"  # Brian
 MODEL="eleven_multilingual_v2"
@@ -16,15 +15,22 @@ if [[ -z "$ELEVENLABS_API_KEY" ]]; then
 fi
 
 declare -A CLIPS
-CLIPS[01-dashboard]="This is Beacon. It probes eight x-four-oh-two endpoints on Stellar every five minutes and scores them on uptime and latency. The sparkline bars show each probe result. Green is healthy. Red is a failure."
-CLIPS[02-feed]="The probe feed streams in every five minutes. Each line is a real HTTP request. You can see latency variation across endpoints. When something fails, it shows timeout or error instead of a fake latency number."
-CLIPS[03-scores]="Trust scores combine uptime and latency over twenty-four hours. Seventy percent weight on uptime. Thirty percent on p95 latency. A 402 response counts as healthy since that's the x-four-oh-two paywall working."
-CLIPS[04-payment]="The scores themselves are behind an x-four-oh-two paywall. An agent pays one tenth of a cent in USDC on Stellar. It gets the full trust score JSON back. That transaction settles on Stellar testnet."
-CLIPS[05-explorer]="And here's the proof on chain. Account creation. USDC trustline. A DEX swap for testnet USDC. And the x-four-oh-two payment invocation. All real transactions on Stellar."
-CLIPS[06-close]="Beacon gives agents the trust data they need before spending money. That's it."
+CLIPS[01-dashboard]="Eight endpoints. Probed every five minutes. Scored on uptime and latency. This is Beacon's live trust dashboard for x-four-oh-two on Stellar."
+CLIPS[02-cards]="Each endpoint gets a trust score from zero to one hundred. The bars are real probe results. Green is a successful response. Red is a failure or timeout. The score combines uptime and latency over twenty-four hours."
+CLIPS[03-compact]="Endpoints that aren't responding drop to zero and fade out. The probe log below shows every request with its actual latency. No fake data. Every number is a real HTTP call."
+CLIPS[04-payment]="The scores are behind an x-four-oh-two paywall. An agent pays one tenth of a cent in USDC on Stellar. It gets the trust score JSON back. That transaction settles on Stellar testnet."
+CLIPS[05-explorer]="Here's the proof on chain. Account creation. USDC trustline. A DEX swap for testnet USDC. And the x-four-oh-two payment. All real transactions on Stellar."
+CLIPS[06-close]="Beacon gives agents trust data before they spend money. Try it live."
 
-for clip in 01-dashboard 02-feed 03-scores 04-payment 05-explorer 06-close; do
+for clip in 01-dashboard 02-cards 03-compact 04-payment 05-explorer 06-close; do
   OUT="$AUDIO_DIR/$clip.mp3"
+
+  # Skip if already exists and is valid audio
+  if [[ -f "$OUT" ]] && file "$OUT" | grep -q "Audio\|MPEG\|MP3\|layer"; then
+    echo "SKIP $clip (exists)"
+    continue
+  fi
+
   echo "Generating $clip..."
   TEXT="${CLIPS[$clip]}"
 

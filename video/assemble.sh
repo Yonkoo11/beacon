@@ -18,7 +18,7 @@ BREATH=0.3
 VFADE_OUT=0.2
 GAP=0.3
 
-CLIPS=(01-dashboard 02-feed 03-scores 04-payment 05-explorer 06-close)
+CLIPS=(01-dashboard 02-cards 03-compact 04-payment 05-explorer 06-close)
 
 for clip in "${CLIPS[@]}"; do
   COMPOSITE="$COMPOSITES_DIR/$clip.png"
