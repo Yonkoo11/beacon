@@ -115,17 +115,17 @@
       position: relative; width: 168px; height: 168px; flex-shrink: 0;
     }
     .hero-gauge svg { width: 168px; height: 168px; }
-    .gauge-track { fill: none; stroke: rgba(255,255,255,0.03); stroke-width: 5; }
+    .gauge-track { fill: none; stroke: rgba(255,255,255,0.04); stroke-width: 6; }
     .gauge-value {
-      fill: none; stroke-width: 5; stroke-linecap: round;
+      fill: none; stroke-width: 6; stroke-linecap: round;
       transition: stroke-dashoffset 1.4s var(--ease), stroke 0.8s var(--ease);
     }
     /* Gauge glow ring behind the arc */
     .gauge-glow {
-      fill: none; stroke-width: 14; stroke-linecap: round;
-      opacity: 0.08;
+      fill: none; stroke-width: 18; stroke-linecap: round;
+      opacity: 0.12;
       transition: stroke-dashoffset 1.4s var(--ease), stroke 0.8s var(--ease);
-      filter: blur(6px);
+      filter: blur(8px);
     }
     .hero-center {
       position: absolute; inset: 0;
@@ -176,7 +176,7 @@
     }
     .pulse-svg { width: 200%; height: 20px; }
     .pulse-path {
-      fill: none; stroke: var(--em); stroke-width: 1; opacity: 0.15;
+      fill: none; stroke: var(--em); stroke-width: 1.5; opacity: 0.2;
       animation: pulse-scroll 4s linear infinite;
     }
     @keyframes pulse-scroll {
@@ -284,14 +284,23 @@
       transition: color 0.4s var(--ease);
     }
 
+    .ep-feat-meta {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+    }
     .ep-feat-url {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 14px; color: var(--text-muted); margin-bottom: 14px;
+      font-size: 14px; color: var(--text-muted);
+    }
+    .ep-feat-uptime-inline {
+      font-size: 13px; font-weight: 500; color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+      padding: 1px 8px; border-radius: 4px;
+      background: rgba(255,255,255,0.03);
     }
 
-    .ep-feat-bottom { display: flex; align-items: flex-end; gap: 20px; }
     .ep-feat-bars {
-      flex: 1; display: flex; gap: 2px; align-items: flex-end; height: 32px;
+      display: flex; gap: 2px; align-items: flex-end; height: 32px;
+      width: 100%;
     }
     .bar {
       flex: 1; min-width: 3px; max-width: 10px; border-radius: 1.5px;
@@ -303,10 +312,7 @@
     .bar.fail { background: var(--red); opacity: 0.55; }
     .bar.fail:hover { opacity: 1; }
     .bar.empty { background: rgba(255,255,255,0.025); }
-    .ep-feat-uptime {
-      font-size: 14px; font-weight: 500; color: var(--text-secondary);
-      font-variant-numeric: tabular-nums; flex-shrink: 0; white-space: nowrap;
-    }
+    /* (uptime moved inline next to URL) */
 
     /* ============================================
        COMPACT ENDPOINTS — remaining, minimal rows
@@ -692,23 +698,24 @@
       score.style.color = sColor(ep.trust_score); score.textContent = ep.trust_score;
       top.appendChild(left); top.appendChild(score);
 
+      const meta = document.createElement('div'); meta.className = 'ep-feat-meta';
       const url = document.createElement('div'); url.className = 'ep-feat-url';
       url.textContent = shortUrl(ep.url);
+      meta.appendChild(url);
+      const uptimeTag = document.createElement('span'); uptimeTag.className = 'ep-feat-uptime-inline';
+      uptimeTag.textContent = ep.uptime_score + '% uptime';
+      meta.appendChild(uptimeTag);
 
-      const bottom = document.createElement('div'); bottom.className = 'ep-feat-bottom';
+      card.appendChild(top); card.appendChild(meta);
       if (ep.probe_history && ep.probe_history.length > 0) {
-        bottom.appendChild(buildBars(ep.probe_history, 32, 36, 'big'));
+        card.appendChild(buildBars(ep.probe_history, 32, 40, 'big'));
       }
-      const uptime = document.createElement('div'); uptime.className = 'ep-feat-uptime';
-      uptime.textContent = ep.uptime_score + '% uptime';
-      bottom.appendChild(uptime);
-
-      card.appendChild(top); card.appendChild(url); card.appendChild(bottom);
       return card;
     }
 
     function buildCompact(ep) {
       const row = document.createElement('div'); row.className = 'ep-comp'; row.tabIndex = 0;
+      if (ep.trust_score === 0) row.style.opacity = '0.5';
       const dot = document.createElement('div'); dot.className = 'c-dot ' + ep.status;
       const info = document.createElement('div'); info.className = 'c-info';
       const name = document.createElement('div'); name.className = 'c-name'; name.textContent = ep.name;
