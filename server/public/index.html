@@ -391,13 +391,15 @@
       width: 5px; height: 5px; border-radius: 50%; background: var(--em);
       animation: breathe 4s ease-in-out infinite;
     }
+    .feed-scroll {
+      max-height: 420px; overflow-y: auto;
+    }
+    .feed-scroll::-webkit-scrollbar { width: 3px; }
+    .feed-scroll::-webkit-scrollbar-track { background: transparent; }
+    .feed-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
     .feed-grid {
       display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px;
-      max-height: 480px; overflow-y: auto;
     }
-    .feed-grid::-webkit-scrollbar { width: 3px; }
-    .feed-grid::-webkit-scrollbar-track { background: transparent; }
-    .feed-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 2px; }
     @media (max-width: 680px) { .feed-grid { grid-template-columns: 1fr; } }
 
     .feed-row {
@@ -576,7 +578,7 @@
         <span class="sec-label" style="margin-bottom:0">Recent Probes</span>
         <div class="live-pip"><div class="live-pip-dot"></div> every 5m</div>
       </div>
-      <div class="feed-grid" id="feed"></div>
+      <div class="feed-scroll"><div class="feed-grid" id="feed"></div></div>
     </section>
 
     <footer class="footer">
