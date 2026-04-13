@@ -14,7 +14,7 @@
 
 ## Details Tab
 
-**Description (long form):**
+Description (long form) -- paste into the "old editor" (rich text), not the code block:
 
 Beacon is a trust layer for the x402 agent economy on Stellar.
 
@@ -26,7 +26,7 @@ The scores themselves are served behind an x402 paywall. An agent pays 0.001 USD
 
 The dashboard shows all eight endpoints with their scores, probe history bars, and a live feed of every probe result. Endpoints that stop responding drop to zero and visually fade out. Everything updates in real time.
 
-**What we built:**
+What we built:
 - Express.js server with SQLite (WAL mode) for probe storage
 - Probe scheduler that hits all endpoints every 5 minutes via real HTTP requests
 - Trust score algorithm: 70% uptime + 30% normalized p95 latency over 24h
@@ -35,7 +35,7 @@ The dashboard shows all eight endpoints with their scores, probe history bars, a
 - Live dashboard with two-tier endpoint display, probe history visualization, and ambient trust indicator
 - 32 passing tests
 
-**What makes it different:**
+What makes it different:
 - Not a status page. Not an uptime monitor. It's a trust oracle for autonomous agents that need to make spending decisions without human input.
 - The scores are behind x402, so accessing trust data is itself a demonstration of x402 working on Stellar.
 - Every probe result is real. No mock data, no simulated responses. The probe bars on the dashboard reflect actual HTTP calls happening in production.
